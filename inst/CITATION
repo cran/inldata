@@ -1,0 +1,13 @@
+utils::citHeader(sprintf("To cite %s in publications, please use:", meta$Package))
+
+utils::citEntry(
+  entry = "Manual",
+  author = eval(parse(text=meta$Authors)),
+  title = "inldata---Collection of datasets for the U.S. Geological Survey-Idaho National Laboratory Aquifer Monitoring Networks",
+  address = "Reston, Va.",
+  year = "2020",
+  note = sprintf("R package version %s", meta$Version),
+  url = "https://doi.org/10.5066/P9PP9UXZ",
+  key = "inldata-package",
+  textVersion = "Fisher, J.C., 2020, inldata---Collection of datasets for the U.S. Geological Survey-Idaho National Laboratory Aquifer Monitoring Networks: U.S. Geological Survey software release, R package, Reston, Va., https://doi.org/10.5066/P9PP9UXZ."
+)
