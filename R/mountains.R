@@ -1,19 +1,34 @@
 #' Mountain Ranges and Buttes
 #'
-#' Simplified representation of the mountain ranges and buttes in the
-#' vicinity of Idaho National Laboratory, eastern Idaho.
+#' @description A simplified representation of mountain ranges and buttes in the
+#'   vicinity of Idaho National Laboratory (INL) in eastern Idaho.
+#'   The mountain ranges and buttes have different strata compositions that
+#'   contribute to different chemical signatures in the water.
+#'   These signatures are sourced from the tributary valleys and
+#'   define the background concentrations in the western INL.
 #'
-#' @format A SpatialPolygonsDataFrame of the \pkg{sp} package with 17 features and 1 variable.
-#'   See \code{\link{projection}} dataset for coordinate reference system information.
+#' @format A [simple feature](https://r-spatial.github.io/sf/articles/sf1.html) with fields:
+#'   \describe{
+#'     \item{`name`}{Feature name.}
+#'     \item{`geometry`}{Polygon geometry with a positive area (two-dimensional);
+#'       sequence of points that form a closed, non-self-intersecting ring; the first ring denotes the exterior ring,
+#'       zero or more subsequent rings denote holes in this exterior ring.}
+#'   }
+#'   See [`crs`] dataset for coordinate reference system information.
 #'
-#' @source U.S. Geological Survey
-#'   \href{https://www.usgs.gov/centers/id-water/science/idaho-national-laboratory-project-office}{Idaho National Laboratory Project Office}
+#' @source The mountains were digitized from 7.5' quads within and in the vicinity of the Idaho
+#'   National Laboratory by the U.S. Geological Survey
+#'   [Idaho National Laboratory Project Office](https://www.usgs.gov/centers/idaho-water-science-center/science/idaho-national-laboratory-project-office)
+#'   The digitized polygons were made into shapefiles and converted into GeoJSON files.
+#'
+#' @references Rattray, G.W., 2018, Geochemistry of groundwater in the eastern Snake River Plain aquifer,
+#'   Idaho National Laboratory and vicinity, eastern Idaho:
+#'   U.S. Geological Survey Professional Paper 1837-A (DOE/ID-22246), 198 p.,\doi{10.3133/pp1837A}.
 #'
 #' @keywords datasets
 #'
 #' @examples
-#' inlmisc::PlotMap(mountains, dms.tick = TRUE)
-#' sp::plot(mountains, col = "gray", add = TRUE)
-#' str(mountains@data)
+#' print(mountains)
 #'
+#' plot(mountains["name"], col = "grey")
 "mountains"

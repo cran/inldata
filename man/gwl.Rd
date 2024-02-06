@@ -3,69 +3,86 @@
 \docType{data}
 \name{gwl}
 \alias{gwl}
-\title{Groundwater Level Measurements}
+\title{Groundwater Levels}
 \format{
-A data frame with 54,417 records and 5 variables:
+A data frame with columns:
 \describe{
-  \item{\code{site_no}}{USGS site number}
-  \item{\code{lev_dt}}{date the water level was measured.}
-  \item{\code{lev_va}}{water level value, in feet below land surface.
-    A water-level elevation may be calculated by subtracting the depth-to-water
-    (\code{lev_va}) from the land-surface elevation (\code{alt_va} in the \code{\link{sites}} dataset).}
-  \item{\code{lev_status_cd}}{a code indicating the status of the site
-    at the time the water level was measured.
-      The codes and their meanings are:
-      "A" water level was affected by atmospheric pressure,
-      "D" the site was dry (no water level is recorded),
-      "N" the measurement was discontinued,
-      "O" an obstruction was encountered in the well (no water level was recorded),
-      "P" the site was being pumped,
-      "R" the site had been pumped recently,
-      "S" a nearby site that taps the same aquifer was being pumped, and
-      "X" the water level was affected by stage in nearby surface-water site.}
-  \item{\code{date_time}}{date and time the water level was measured.
-    Missing values of time were substituted with \dQuote{00:00} (12:00 midnight and start of day).}
+\item{\code{site_nm}}{Local site name.}
+\item{\code{site_no}}{USGS site number.}
+\item{\code{lev_dt}}{Date and time the water level was measured, in "America/Denver" time zone.
+Missing values of time were substituted with "12:00".}
+\item{\code{lev_meth_cd}}{Code indicating the method used to determine the water level.
+The codes and their meanings are as follows:
+"A" airline measurement,
+"B" analog or graphic recorder,
+"F" transducer,
+"G" pressure-gage measurement,
+"L" interpreted from geophysical logs,
+"O" observed,
+"S" steel-tape measurement,
+"T" electric-tape measurement,
+"V" calibrated electric tape---accuracy of instrument has been checked,
+"W" calibrated electric cable, and
+"Z" other.
+}
+\item{\code{lev_status_cd}}{Code indicating the status of the site at the time the water level was measured.
+The codes and their meanings are as follows:
+"1" static,
+"3" true value is above the reported water level value due to local conditions,
+"5" groundwater level affected by surface water,
+"P" site was being pumped.}
+\item{\code{lev_age_cd}}{Code indicating the water-level approval status.
+The codes and their meanings are as follows:
+"A" approved for publication---processing and review completed, and
+"P" provisional data subject to revision.}
+\item{\code{lev_va}}{Depth to water level, in feet below the land surface reference point.}
+\item{\code{sl_lev_va}}{Groundwater level above North American Vertical Datum of 1988 (NAVD 88), in feet.}
+\item{\code{lev_acy_va}}{Accuracy of depth to water-level measurement (\code{lev_va}), in feet.}
+\item{\code{sl_lev_acy_va}}{Accuracy of groundwater level above NAVD value (\code{sl_lev_va}), in feet.
+Does not account for vertical datum shift.}
 }
 }
 \source{
-Data obtained from the NWIS database (U.S. Geological Survey, 2020).
+Data was obtained from the National Water Information System (NWIS) (U.S. Geological Survey, 2023).
+Groundwater level data was retrieved from NWIS by using the USGS R-package
+\href{https://code.usgs.gov/water/dataRetrieval}{dataRetrieval} (DeCicco and others, 2023).
+Data was retrieved for each site number listed in the samples dataset and removed any non-essential columns.
 }
 \usage{
 gwl
 }
 \description{
-Groundwater level measurements in wells in the
-U.S. Geological Survey (USGS) water-level aquifer monitoring network,
+Groundwater levels in wells in the
+U.S. Geological Survey (USGS) water-level monitoring network,
 Idaho National Laboratory and vicinity, Idaho.
-Data was obtained from the National Water Information System
-(\href{https://dx.doi.org/10.5066/F7P55KJN}{NWIS}) (U.S. Geological Survey, 2020).
+The purpose of this network is to document the changes in storage
+and the general direction of groundwater flow within the eastern Snake River Plain (ESRP) aquifer.
+The data collected from this network have been used to determine changes
+in hydraulic-gradient that affect the rate and direction of groundwater and waste-constituent movement.
+It can also help identify sources of recharge and measure its effects.
+The groundwater measurements are taken from both the ESRP aquifer
+and the perched groundwater zones above the aquifer.
 }
 \examples{
-site_no <- "432700112470801"  # well USGS 1
-xlim <- as.Date(c("1989-01-01", "2019-01-01"))
-d <- gwl[gwl$site_no == site_no, c("lev_dt", "lev_va")]
-main <- sites@data[sites@data$site_no == site_no, "site_nm"]
-ylab <- sprintf("Water level, in \%s below land surface",
-                c("feet", "meters"))
-inlmisc::PlotGraph(d, ylab = ylab, main = main, xlim = xlim,
-                   type = "p", pch = 19, seq.date.by = "year",
-                   conversion.factor = 0.3048,
-                   center.date.labels = TRUE)
 str(gwl)
 
-alt_va <- sites@data[sites@data$site_no == site_no, "alt_va"]
-y <- alt_va - d$lev_va
-ylab <- sprintf("Water level, in \%s above sea level",
-                c("feet", "meters"))
-inlmisc::PlotGraph(d$lev_dt, y, ylab = ylab, main = main,
-                   xlim = xlim, type = "p", pch = 19,
-                   seq.date.by = "year",
-                   conversion.factor = 0.3048,
-                   center.date.labels = TRUE)
-
+poi <- as.POSIXct(c("2000-01-01", "2001-01-01")) # period of interest
+site_no <- "432700112470801" # well USGS 1
+is <- gwl$lev_dt >= poi[1] & gwl$lev_dt < poi[2] & gwl$site_no == site_no
+d <- gwl[is, ]
+plotrix::plotCI(
+  x = d$lev_dt,
+  y = d$sl_lev_va,
+  li = d$sl_lev_va - d$sl_lev_acy_va,
+  ui = d$sl_lev_va + d$sl_lev_acy_va
+)
 }
 \references{
-U.S. Geological Survey, 2020, National Water Information System---web services,
-  accessed August 4, 2020, from \url{https://doi.org/10.5066/F7P55KJN}.
+DeCicco, L.A., Hirsch, R.M., Lorenz, D., Watkins, W.D., Johnson, M., 2023,
+dataRetrieval: R packages for discovering and retrieving water data available from
+Federal hydrologic web services, v.2.7.13, \doi{10.5066/P9X4L3GE}.
+
+U.S. Geological Survey, 2023, National Water Information System---web services,
+accessed April 7, 2023, from \doi{10.5066/F7P55KJN}.
 }
 \keyword{datasets}

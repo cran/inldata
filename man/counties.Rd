@@ -5,25 +5,34 @@
 \alias{counties}
 \title{County Boundaries}
 \format{
-A SpatialLines of the \pkg{sp} package with 45 features.
-  See \code{\link{projection}} dataset for coordinate reference system information.
+A \href{https://r-spatial.github.io/sf/articles/sf1.html}{simple feature} with fields:
+\describe{
+\item{\code{name}}{County name.}
+\item{\code{id}}{Unique identifier.}
+\item{\code{geometry}}{Polygon geometry with a positive area (two-dimensional);
+sequence of points that form a closed, non-self-intersecting ring; the first ring denotes the exterior ring,
+zero or more subsequent rings denote holes in this exterior ring.}
+}
+See \code{\link{crs}} dataset for coordinate reference system information.
 }
 \source{
+Spatial polygon extracts were obtained from the
+Master Address File / Topologically Integrated Geographic Encoding and Referencing
+(\href{https://www.census.gov/geographies/mapping-files/time-series/geo/tiger-line-file.2022.html#list-tab-ZTNQS959OZX8M0ODED}{MAF/TIGER})
+Database (MTDB), 2022 data collection, released September 30, 2022. Which is a part of the
 U.S. Department of Commerce, U.S. Census Bureau, Geography Division/Cartographic Products Branch.
-  Spatial extract from the Master Address File / Topologically Integrated Geographic Encoding and Referencing
-  (\href{https://catalog.data.gov/dataset/tiger-line-shapefile-2019-series-information-for-the-current-place-state-based-shapefile}{MAF/TIGER}) Database (MTDB),
-  2019 data collection, released April 2, 2020.
+These polygons were cropped to study area, and any non-essential data was removed.
 }
 \usage{
 counties
 }
 \description{
-Boundaries of counties
-in the vicinity of Idaho National Laboratory, eastern Idaho, as of January 1, 2015.
+County boundaries in the vicinity of Idaho National Laboratory,
+eastern Idaho, as of January 1, 2022.
 }
 \examples{
-inlmisc::PlotMap(counties, dms.tick = TRUE)
-sp::plot(counties, lty = 5, add = TRUE)
+print(counties)
 
+plot(counties["name"])
 }
 \keyword{datasets}

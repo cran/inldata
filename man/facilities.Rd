@@ -5,26 +5,39 @@
 \alias{facilities}
 \title{Idaho National Laboratory Facilities}
 \format{
-A SpatialPolygonsDataFrame object with 7 features and 1 variable.
-  See \code{\link{projection}} dataset for coordinate reference system information.
+A \href{https://r-spatial.github.io/sf/articles/sf1.html}{simple feature} with fields:
+\describe{
+\item{\code{name}}{Facility name}.
+\item{\code{id}}{Facility identifier.
+Facility abbreviations and descriptions are as follows:
+"TAN" Test Area North,
+"NRF" Naval Reactors Facility,
+"MRF" Materials and Fuels Complex,
+"ATRC" Advanced Test Reactor Complex,
+"INTEC" Idaho Nuclear Technology and Engineering Center,
+"CFA" Central Facilities Area
+"RWMC" Radioactive Waste Management Complex.}
+\item{\code{geometry}}{Set of polygons, where a polygon is a geometry with a positive area (two-dimensional).}
+}
+See \code{\link{crs}} dataset for coordinate reference system information.
 }
 \source{
-U.S. Geological Survey
-  \href{https://www.usgs.gov/centers/id-water/science/idaho-national-laboratory-project-office}{Idaho National Laboratory Project Office}
+A GeoJSON file of the facilities was created by the U.S. Geological Survey
+\href{https://www.usgs.gov/centers/idaho-water-science-center/science/idaho-national-laboratory-project-office}{Idaho National Laboratory Project Office}
 }
 \usage{
 facilities
 }
 \description{
-Federal research facilities at the
-Idaho National Laboratory (\href{https://inl.gov/}{INL}).
+Federal research facilities at the Idaho National Laboratory (\href{https://inl.gov/}{INL}).
+The INL facilities have been the primary source of radioactive and
+chemical waste constituents in the water from the eastern Snake River Plain aquifer
+and in perched groundwater zones at or near the INL.
+This is due to the wastewater disposal practices at the INL facilities.
 }
 \examples{
-inlmisc::PlotMap(facilities, dms.tick = TRUE)
-sp::plot(facilities, col = "red", add = TRUE)
-raster::text(facilities, facilities@data$NAME,
-             cex = 0.6, pos = 1)
-str(facilities@data)
+print(facilities)
 
+plot(facilities["id"])
 }
 \keyword{datasets}

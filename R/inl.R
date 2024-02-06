@@ -1,18 +1,28 @@
 #' Idaho National Laboratory Boundary
 #'
-#' Boundary of the Idaho National Laboratory (\href{https://inl.gov/}{INL}).
+#' @description Geographic limits of the Idaho National Laboratory ([INL](https://inl.gov/)).
+#'   The INL is located on the west-central part of the eastern Snake River Plain
+#'   and covers an area of approximately 890 square miles.
+#'   It was established in 1949 to develop atomic energy, nuclear safety, defense programs,
+#'   environmental research, and advanced energy concepts.
 #'
-#' @format A SpatialPolygonsDataFrame of the \pkg{sp} package object with 1 feature and 4 variables.
-#'   See \code{\link{projection}} dataset for coordinate reference system information.
+#' @format A [simple feature](https://r-spatial.github.io/sf/articles/sf1.html) with fields:
+#'   \describe{
+#'     \item{`geometry`}{Polygon geometry with a positive area (two-dimensional);
+#'       sequence of points that form a closed, non-self-intersecting ring; the first ring denotes the exterior ring,
+#'       zero or more subsequent rings denote holes in this exterior ring.}
+#'   }
+#'   See [`crs`] dataset for coordinate reference system information.
 #'
-#' @source U.S. Geological Survey
-#'   \href{https://www.usgs.gov/centers/id-water/science/idaho-national-laboratory-project-office}{Idaho National Laboratory Project Office}
+#' @source The INL boundary was digitized from 7.5' quads within and in the vicinity of the Idaho
+#' National Laboratory by the U.S. Geological Survey
+#' [Idaho National Laboratory Project Office](https://www.usgs.gov/centers/idaho-water-science-center/science/idaho-national-laboratory-project-office)
+#' The digitized polygons were made into shapefiles and converted into GeoJSON files.
 #'
 #' @keywords datasets
 #'
 #' @examples
-#' inlmisc::PlotMap(inl, dms.tick = TRUE)
-#' sp::plot(inl, col = "red", add = TRUE)
-#' str(inl@data)
+#' print(inl)
 #'
+#' plot(inl, col = "grey")
 "inl"

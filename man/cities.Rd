@@ -5,27 +5,32 @@
 \alias{cities}
 \title{Cities and Towns}
 \format{
-A SpatialPointsDataFrame of the \pkg{sp} package with 24 records and 16 variables.
-  See \code{\link{projection}} dataset for coordinate reference system information.
+A \href{https://r-spatial.github.io/sf/articles/sf1.html}{simple feature} with fields:
+\describe{
+\item{\code{name}}{City name.}
+\item{\code{id}}{Unique identifier.}
+\item{\code{geometry}}{Zero-dimensional geometry containing a single point.}
+}
+See \code{\link{crs}} dataset for coordinate reference system information.
 }
 \source{
+Spatial point extracts were obtained from the
+Master Address File / Topologically Integrated Geographic Encoding and Referencing
+(\href{https://www.census.gov/geographies/mapping-files/time-series/geo/tiger-line-file.2022.html#list-tab-ZTNQS959OZX8M0ODED}{MAF/TIGER})
+Database (MTDB), 2022 data collection, released September 30, 2022. Which is a part of the
 U.S. Department of Commerce, U.S. Census Bureau, Geography Division/Cartographic Products Branch.
-  Spatial extract from the Master Address File / Topologically Integrated Geographic Encoding and Referencing
-  (\href{https://catalog.data.gov/dataset/tiger-line-shapefile-2019-series-information-for-the-current-place-state-based-shapefile}{MAF/TIGER}) Database (MTDB),
-  2019 data collection, released April 2, 2020.
+The centroids of these extracts were cropped to the study area, and any non-essential data was removed.
 }
 \usage{
 cities
 }
 \description{
-Cities and towns (populated places) in the vicinity of Idaho National Laboratory, eastern Idaho.
+Cities and towns (populated places) in the vicinity of Idaho National Laboratory,
+eastern Idaho as of January 1, 2022.
 }
 \examples{
-inlmisc::PlotMap(cities, dms.tick = TRUE)
-sp::plot(cities, pch = 19, add = TRUE)
-raster::text(cities, cities@data$NAME,
-             pos = 1, cex = 0.6)
-str(cities@data)
+print(cities)
 
+plot(cities["name"], pch = 19)
 }
 \keyword{datasets}

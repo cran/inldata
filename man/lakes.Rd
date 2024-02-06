@@ -5,24 +5,40 @@
 \alias{lakes}
 \title{Lakes and Ponds}
 \format{
-A SpatialPolygonsDataFrame of the \pkg{sp} package with 155 features of 12 variables.
-  See \code{\link{projection}} dataset for coordinate reference system information.
+A \href{https://r-spatial.github.io/sf/articles/sf1.html}{simple feature} with fields:
+\describe{
+\item{\code{gnis_nm}}{GNIS name.}
+\item{\code{id}}{Unique identifier.}
+\item{\code{reach_cd}}{Reach code, a unique 14-digit code that identifies a
+continuous piece of surface water with similar hydrologic characteristics.}
+\item{\code{gnis_id}}{Geographic Names Information System (GNIS) identifier.}
+\item{\code{feature_tp}}{USGS National Hydrography Dataset (NHD) feature type code.
+"LakePond" is a standing body of water with a predominantly natural shoreline surrounded by land;
+"Reservoir" is a constructed basin formed to contain water or other liquids; and
+"SwampMarsh" is a non-cultivated, vegetated area that is inundated or
+saturated for a significant part of the year.}
+\item{\code{geometry}}{Polygon geometry with a positive area (two-dimensional);
+sequence of points that form a closed, non-self-intersecting ring;
+the first ring denotes the exterior ring,
+zero or more subsequent rings denote holes in this exterior ring.}
+}
+See \code{\link{crs}} dataset for coordinate reference system information.
 }
 \source{
-U.S. Geological Survey (USGS), National Geospatial Technical Operations Center,
-  USGS National Hydrography Dataset (NHD) Medium Resolution for Idaho,
-  released August 4, 2014.
+Spatial polygon extract files obtained from the
+U.S. Geological Survey (USGS) National Hydrography Dataset (NHD) Medium Resolution for Idaho,
+released August 4, 2014. Which is part of the National Geospatial Technical Operations Center.
+These extracts were cropped to eastern Idaho extent and unnecessary columns were removed.
 }
 \usage{
 lakes
 }
 \description{
-Perennial lakes and ponds in the vicinity of Idaho National Laboratory, eastern Idaho.
+Perennial lakes and ponds in the vicinity of the Idaho National Laboratory (INL) in eastern Idaho.
 }
 \examples{
-inlmisc::PlotMap(lakes, dms.tick = TRUE,
-                 lakes = list(lakes, "lwd" = 1))
-str(lakes@data)
+print(lakes)
 
+plot(lakes["id"], col = "lightblue", border = "blue")
 }
 \keyword{datasets}

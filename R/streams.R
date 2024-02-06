@@ -1,19 +1,43 @@
 #' Rivers and Streams
 #'
-#' Stream segments in the vicinity of Idaho National Laboratory, eastern Idaho.
+#' @description Stream segments in the vicinity of Idaho National Laboratory (INL), eastern Idaho.
+#'   Surface water infiltrated to the eastern Snake River Plain aquifer
+#'   through river and streams. The chemical signatures in the water from the tributary
+#'   valleys define the background concentration in the groundwater in the western INL.
 #'
-#' @format A SpatialLinesDataFrame of the \pkg{sp} package with 197 features of 14 variables.
-#'   See \code{\link{projection}} dataset for coordinate reference system information.
+#' @format A [simple feature](https://r-spatial.github.io/sf/articles/sf1.html) with fields:
+#'   \describe{
+#'     \item{`gnis_nm`}{GNIS name.}
+#'     \item{`id`}{Unique identifier.}
+#'     \item{`reach_cd`}{Reach code, a unique 14-digit code that identifies a
+#'       continuous piece of surface water with similar hydrologic characteristics.}
+#'     \item{`gnis_id`}{Geographic Names Information System (GNIS) identifier.}
+#'     \item{`feature_tp`}{USGS National Hydrography Dataset (NHD) feature type code.
+#'       The codes and their meanings are as follows:
+#'         "ArtificialPath" is a surrogate for general flow direction;
+#'         "CanalDitch" is an artificial open waterway constructed to transport water,
+#'           to irrigate or drain land, to connect two or more bodies of water,
+#'           or to serve as a waterway for watercraft;
+#'         "Connector"is a linear water feature that connects two or more waterbodies or
+#'           other linear water features; and
+#'         "StreamRiver" is a linear water feature that is a natural or man-made flowing body of water.}
+#'     \item{`resolution_cd`}{NHD reach resolution where "Medium" is one of the three resolutions
+#'       available for the NHD feature class. The Medium resolution is 1:100,000,
+#'       which means that one unit on the map represents 100,000 units on the ground.}
+#'     \item{`geometry`}{Sequence of points connected by straight, non-self-intersecting line pieces,
+#'       one-dimensional geometry.}
+#'   }
+#'   See [`crs`] dataset for coordinate reference system information.
 #'
-#' @source U.S. Geological Survey (USGS), National Geospatial Technical Operations Center,
-#'   USGS National Hydrography Dataset (NHD) Medium Resolution for Idaho,
-#'   released August 4, 2014.
+#' @source Spatial line extract files obtained from the
+#'   U.S. Geological Survey (USGS) National Hydrography Dataset (NHD) Medium Resolution for Idaho,
+#'   released August 4, 2014. Which is part of the National Geospatial Technical Operations Center.
+#'   These extracts were cropped to eastern Idaho extent and unnecessary columns were removed.
 #'
 #' @keywords datasets
 #'
 #' @examples
-#' inlmisc::PlotMap(streams, dms.tick = TRUE,
-#'                  rivers = list(streams, "lwd" = 1))
-#' str(streams@data)
+#' print(streams)
 #'
+#' plot(streams["id"], col = "blue")
 "streams"
