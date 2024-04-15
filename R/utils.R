@@ -19,7 +19,7 @@
 #'   "03N 29E 33CCC1 MIDDLE 2051 PORT6 ZONE6 826.8FT",
 #'   "MUD LAKE NR TERRETON ID"
 #' )
-#' inldata::parse_station_nm(x)
+#' parse_station_nm(x)
 
 parse_station_nm <- function(x) {
   checkmate::assert_character(x, any.missing = FALSE)
@@ -60,7 +60,7 @@ parse_station_nm <- function(x) {
 #'   "03N 29E 12DDB1    FIRE STA 2",
 #'   "03N 29E 24CCA1 MIDDLE 2050A PORT15 ZONE15 516.8FT"
 #' )
-#' inldata::trim_station_nm(x)
+#' trim_station_nm(x)
 
 trim_station_nm <- function(x) {
   checkmate::assert_character(x, any.missing = FALSE)
@@ -94,7 +94,7 @@ trim_station_nm <- function(x) {
 #' @keywords internal
 #'
 #' @examples
-#' inldata::round_usgs(x = rep(pi, 3), digits = c(1, 2, 3))
+#' round_usgs(x = rep(pi, 3), digits = c(1, 2, 3))
 
 round_usgs <- function(x, digits = 0) {
   checkmate::assert_numeric(x)
@@ -125,9 +125,9 @@ round_usgs <- function(x, digits = 0) {
 #' @keywords internal
 #'
 #' @examples
-#' inldata::paste_strings(letters, c(), c(1, 2, 3))
+#' paste_strings(letters, c(), c(1, 2, 3))
 #'
-#' inldata::paste_strings(letters, c(), c(1, 2, 3), recycle0 = TRUE)
+#' paste_strings(letters, c(), c(1, 2, 3), recycle0 = TRUE)
 
 paste_strings <- function(..., collapse = " ", recycle0 = FALSE) {
   check_package(pkg = "stringi", msg = "Concatenating character vectors")
@@ -170,7 +170,7 @@ paste_strings <- function(..., collapse = " ", recycle0 = FALSE) {
 #' @keywords internal
 #'
 #' @examples
-#' inldata::check_package(pkg = "inldata", msg = "Dataset access")
+#' check_package(pkg = "inldata", msg = "Dataset access")
 
 check_package <- function(pkg, msg = NULL, call. = FALSE) {
   checkmate::assert_string(pkg)
@@ -183,4 +183,56 @@ check_package <- function(pkg, msg = NULL, call. = FALSE) {
     }
     stop(s, call. = call.)
   }
+}
+
+
+#' Extract File Size
+#'
+#' @description Extract size on the user's file system.
+#'
+#' @param paths 'character' vector.
+#'   File paths.
+#'
+#' @return Formatted file size(s).
+#'
+#' @author J.C. Fisher, U.S. Geological Survey, Idaho Water Science Center
+#'
+#' @export
+#'
+#' @keywords internal
+#'
+#' @examples
+#' system.file("CITATION", package = "inldata") |>
+#'   get_file_size()
+
+get_file_size <- function(paths) {
+  checkmate::assert_character(paths, min.chars = 1, any.missing = FALSE, min.len = 1)
+  file_sizes <- file.size(paths) # in bytes
+  vapply(file_sizes,
+    FUN = function(x) {
+      if (is.na(x)) return(NA_character_)
+
+      # code adapted from Rohit Jain's Stack Overflow post at
+      # https://stackoverflow.com/questions/13539871
+      # accessed on 2024-04-08,
+      # licensed under Creative Commons Attribute-ShareAlike license, version 3.0
+      k <- x / 1024
+      m <- x / 1024^2
+      g <- x / 1024^3
+      t <- x / 1024^4
+      if (t > 1) {
+        t |> round(digits = 2) |> paste("TB") # terabytes
+      } else if (g > 1) {
+        g |> round(digits = 2) |> paste("GB") # gigabytes
+      } else if (m > 1) {
+        m |> round(digits = 2) |> paste("MB") # megabytes
+      } else if (k > 1) {
+        k |> round(digits = 2) |> paste("KB") # kilobytes
+      } else {
+        x |> round(digits = 2) |> paste("B") # bytes
+      }
+
+    },
+    FUN.VALUE = character(1)
+  )
 }

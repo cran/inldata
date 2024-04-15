@@ -1,9 +1,13 @@
 # inldata 1.1.5
 
-- Reduce ellapsed time for `make_data_release` function example.
+- Revise datasets to incorporate data from the 2023 U.S. Census, which was previously based on the 2022 data.
+- Remove `mountains` dataset because of limited spatial coverage.
+- Replace coordinate accuracy code with accuracy value in seconds (`sites$coord_acy_va`).
+- Remove `inldata::` from examples in help documentation and unit tests because unnecessary.
 
 # inldata 1.1.4
 
+- Reduce ellapsed time for `make_data_release` function example.
 - Export 'internal' functions to avoid using `:::` in examples.
 - Replace `\dontrun{}` with `\donttest{}` in the `assert_url` function example.
 - Avoid using `print()` within functions.

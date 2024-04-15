@@ -26,7 +26,8 @@ Name of a package.}
 \item{destdir}{'character' string.
 Destination directory to write files, with tilde-expansion performed.}
 
-\item{...}{Additional arguments to be passed to the \code{\link{write_datasets}} function.}
+\item{...}{Additional arguments to be passed to the \code{\link{write_datasets}} function.
+The \code{formats} argument, which is specified within the function, is the exception.}
 
 \item{bounding}{'bbox', 'sf', 'SpatRaster', or 'PackedSpatRaster' spatial feature.
 Object to compute spatial bounding coordinates from, see \code{\link[sf:st_bbox]{sf::st_bbox}} function.}
@@ -56,12 +57,12 @@ l <- make_data_release(
   metadata = system.file("extdata/metadata.json", package = "inldata"),
   package = "inldata",
   destdir = destdir,
-  include = c("crs", "dl", "inl"),
+  include = c("crs", "dl"),
   quiet = TRUE,
-  bounding = inldata::sites,
+  bounding = sites,
   rngdates = c(
-    inldata::samples$sample_dt,
-    inldata::gwl$lev_dt
+    samples$sample_dt,
+    gwl$lev_dt
   )
 )
 str(l, 1)

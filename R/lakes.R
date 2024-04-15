@@ -19,7 +19,6 @@
 #'       the first ring denotes the exterior ring,
 #'       zero or more subsequent rings denote holes in this exterior ring.}
 #'   }
-#'   See [`crs`] dataset for coordinate reference system information.
 #'
 #' @source Spatial polygon extract files obtained from the
 #'    U.S. Geological Survey (USGS) National Hydrography Dataset (NHD) Medium Resolution for Idaho,

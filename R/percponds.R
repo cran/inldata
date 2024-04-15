@@ -18,7 +18,6 @@
 #'       sequence of points that form a closed, non-self-intersecting ring; the first ring denotes the exterior ring,
 #'       zero or more subsequent rings denote holes in this exterior ring.}
 #'   }
-#'   See [`crs`] dataset for coordinate reference system information.
 #'
 #' @source U.S. Geological Survey
 #'   [Idaho National Laboratory Project Office](https://www.usgs.gov/centers/idaho-water-science-center/science/idaho-national-laboratory-project-office)

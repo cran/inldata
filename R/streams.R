@@ -2,8 +2,7 @@
 #'
 #' @description Stream segments in the vicinity of Idaho National Laboratory (INL), eastern Idaho.
 #'   Surface water infiltrated to the eastern Snake River Plain aquifer
-#'   through river and streams. The chemical signatures in the water from the tributary
-#'   valleys define the background concentration in the groundwater in the western INL.
+#'   through river and streams.
 #'
 #' @format A [simple feature](https://r-spatial.github.io/sf/articles/sf1.html) with fields:
 #'   \describe{
@@ -21,13 +20,9 @@
 #'         "Connector"is a linear water feature that connects two or more waterbodies or
 #'           other linear water features; and
 #'         "StreamRiver" is a linear water feature that is a natural or man-made flowing body of water.}
-#'     \item{`resolution_cd`}{NHD reach resolution where "Medium" is one of the three resolutions
-#'       available for the NHD feature class. The Medium resolution is 1:100,000,
-#'       which means that one unit on the map represents 100,000 units on the ground.}
 #'     \item{`geometry`}{Sequence of points connected by straight, non-self-intersecting line pieces,
 #'       one-dimensional geometry.}
 #'   }
-#'   See [`crs`] dataset for coordinate reference system information.
 #'
 #' @source Spatial line extract files obtained from the
 #'   U.S. Geological Survey (USGS) National Hydrography Dataset (NHD) Medium Resolution for Idaho,

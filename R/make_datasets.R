@@ -20,6 +20,8 @@
 #'   [Time zone][base::timezones] specification.
 #'   Defaults to Mountain Standard Time (North America).
 #'   See [`OlsonNames`] for time zone information.
+#' @param census_yr 'integer' number.
+#'   United States census year.
 #' @param buffer_dist 'numeric' number.
 #'   Buffer distance for the study area defined by the bounding of the sample [`sites`] dataset.
 #'   The buffer distance is measured in units of the coordinate reference system
@@ -35,6 +37,8 @@
 #'   Whether compression should be used when saving a dataset to file.
 #'   Character strings "auto", "gzip", "bzip2" and "xz" (default) are accepted.
 #'   See the [`save`] function for details on compression types.
+#' @param seed 'integer' count.
+#'   Random number generator state, used to create reproducible results.
 #'
 #' @details This function retrieves and parses datasets from local and remote sources.
 #'   Access to the internet is required to download data from the following remote sources:
@@ -67,7 +71,8 @@
 #' @export
 #'
 #' @examples
-#' # Example requires that the path be set to the inldata package source directory.
+#' # Example requires that the 'path' argument be specified as
+#' # the top-level directory of the inldata package repository.
 #' \dontrun{
 #' make_datasets(destdir = tempfile(""))
 #' }
@@ -76,10 +81,12 @@ make_datasets <- function(path = getwd(),
                           destdir = file.path(path, "data"),
                           clean = FALSE,
                           tz = "America/Denver",
+                          census_yr = 2023,
                           buffer_dist = 1000,
                           warn = 1,
                           timeout = 10,
-                          compress = "xz") {
+                          compress = "xz",
+                          seed = 0L) {
 
   # track computation time
   dt <- Sys.time()
@@ -92,11 +99,13 @@ make_datasets <- function(path = getwd(),
   destdir <- path.expand(destdir) |> normalizePath(winslash = "/", mustWork = FALSE)
   checkmate::assert_flag(clean)
   checkmate::assert_choice(tz, choices = OlsonNames())
+  checkmate::assert_int(census_yr, lower = 2000)
   checkmate::assert_int(warn)
   checkmate::assert_number(timeout, lower = 1, finite = TRUE)
   if (!is.logical(compress)) {
     checkmate::assert_choice(compress, choices = c("auto", "gzip", "bzip2", "xz"))
   }
+  checkmate::assert_count(seed, null.ok = TRUE)
 
   # check packages
   for (pkg in c("dataRetrieval", "stats", "stringi")) {
@@ -117,6 +126,9 @@ make_datasets <- function(path = getwd(),
   tmpdir <- tempfile("")
   dir.create(tmpdir, showWarnings = FALSE)
 
+  # set census url
+  census_url <- sprintf("ftp://ftp2.census.gov/geo/tiger/TIGER%s", census_yr)
+
   # get cache directory
   cachedir <- get_cache_dir()
 
@@ -132,11 +144,10 @@ make_datasets <- function(path = getwd(),
   dl <- mds_dl(file)
   save(dl, file = file.path(tmpdir, "dl.rda"), compress = FALSE)
 
-  # make parameter information for analytes dataset (parameters)
+  # make parameter dataset (parameters)
   message("STATUS: making 'parameters' dataset ...")
   file <- file.path(path, "data-raw/qwdata/pcodes.txt")
   parameters <- mds_parameters(file)
-  save(parameters, file = file.path(tmpdir, "parameters.rda"), compress = FALSE)
 
   # make water-quality samples dataset (samples)
   message("STATUS: making 'samples' dataset ...")
@@ -145,8 +156,13 @@ make_datasets <- function(path = getwd(),
     "data-raw/misc/translate-codes.tsv",
     "data-raw/misc/counting-error.tsv"
   ))
-  samples <- mds_samples(files, tz, dl, parameters)
+  samples <- mds_samples(files, tz, dl, parameters, seed)
   save(samples, file = file.path(tmpdir, "samples.rda"), compress = FALSE)
+
+  # continue making parameter dataset (parameters)
+  d <- tabulate_parm_data(parameters, samples)
+  parameters <- merge(parameters, d, by = "pcode", sort = FALSE)
+  save(parameters, file = file.path(tmpdir, "parameters.rda"), compress = FALSE)
 
   # make benchmark concentrations dataset (benchmarks)
   message("STATUS: making 'benchmarks' dataset ...")
@@ -161,7 +177,6 @@ make_datasets <- function(path = getwd(),
   message("STATUS: making 'sites' dataset ...")
   file <- file.path(path, "data-raw/qwdata/siteids.txt")
   sites <- mds_sites(file, crs)
-  save(sites, file = file.path(tmpdir, "sites.rda"), compress = FALSE)
 
   # set spatial extent
   sp_extent <- sf::st_buffer(sites, dist = buffer_dist) |> sf::st_bbox()
@@ -175,6 +190,11 @@ make_datasets <- function(path = getwd(),
   message("STATUS: making 'gwl' dataset ...")
   gwl <- mds_gwl(tz, sites)
   save(gwl, file = file.path(tmpdir, "gwl.rda"), compress = FALSE)
+
+  # continue making site information dataset (sites)
+  d <- tabulate_site_data(sites, samples, gwl, swm)
+  sites <- merge(sites, d, by = "site_no", sort = FALSE)
+  save(sites, file = file.path(tmpdir, "sites.rda"), compress = FALSE)
 
   # make parameter units dataset (units)
   message("STATUS: making 'units' dataset ...")
@@ -218,37 +238,29 @@ make_datasets <- function(path = getwd(),
   percponds <- mds_percponds(file, crs)
   save(percponds, file = file.path(tmpdir, "percponds.rda"), compress = FALSE)
 
-  # make mountain ranges and buttes dataset (mountains)
-  message("STATUS: making 'mountains' dataset ...")
-  file <- file.path(path, "data-raw/misc/mountains.geojson")
-  mountains <- mds_mountains(file, crs, sp_extent)
-  save(mountains, file = file.path(tmpdir, "mountains.rda"), compress = FALSE)
-
   # make state of Idaho boundary dataset (idaho)
   message("STATUS: making 'idaho' dataset ...")
-  url <- "ftp://ftp2.census.gov/geo/tiger/TIGER2022/STATE/tl_2022_us_state.zip"
+  url <- sprintf("%s/STATE/tl_%s_us_state.zip", census_url, census_yr)
   idaho <- mds_idaho(url, cachedir, crs)
   save(idaho, file = file.path(tmpdir, "idaho.rda"), compress = FALSE)
 
   # make cities and towns dataset (cities)
   message("STATUS: making 'cities' dataset ...")
-  url <- "ftp://ftp2.census.gov/geo/tiger/TIGER2022/PLACE/tl_2022_16_place.zip"
+  url <- sprintf("%s/PLACE/tl_%s_16_place.zip", census_url, census_yr)
   cities <- mds_cities(url, cachedir, crs, sp_extent)
   save(cities, file = file.path(tmpdir, "cities.rda"), compress = FALSE)
 
   # make county boundaries dataset (counties)
   message("STATUS: making 'counties' dataset ...")
-  url <- "ftp://ftp2.census.gov/geo/tiger/TIGER2022/COUNTY/tl_2022_us_county.zip"
+  url <- sprintf("%s/COUNTY/tl_%s_us_county.zip", census_url, census_yr)
   counties <- mds_counties(url, cachedir, crs, sp_extent)
   save(counties, file = file.path(tmpdir, "counties.rda"), compress = FALSE)
 
   # make road netowrk dataset (roads)
   message("STATUS: making 'roads' dataset ...")
-  urls <- c(
-    "ftp://ftp2.census.gov/geo/tiger/TIGER2022/PRISECROADS/tl_2022_16_prisecroads.zip",
-    "ftp://ftp2.census.gov/geo/tiger/TIGER2022/ROADS/tl_2022_16023_roads.zip"
-  )
-  roads <- mds_roads(urls, cachedir, crs, sp_extent)
+  prisec_url <- sprintf("%s/PRISECROADS/tl_%s_16_prisecroads.zip", census_url, census_yr)
+  all_urls <- sprintf("%s/ROADS/tl_%s_%s_roads.zip", census_url, census_yr, counties$id)
+  roads <- mds_roads(prisec_url, all_urls, cachedir, crs, sp_extent)
   save(roads, file = file.path(tmpdir, "roads.rda"), compress = FALSE)
 
   # make lakes and ponds dataset (lakes)
@@ -398,7 +410,7 @@ mds_parameters <- function(file) {
 
 # Water-Quality Data Records (samples) -----
 
-mds_samples <- function(files, tz, dl, parameters) {
+mds_samples <- function(files, tz, dl, parameters, seed) {
 
   # check arguments
   checkmate::assert_character(files, len = 3, any.missing = FALSE)
@@ -406,6 +418,7 @@ mds_samples <- function(files, tz, dl, parameters) {
   checkmate::assert_string(tz)
   checkmate::assert_data_frame(dl, min.rows = 1, col.names = "named")
   checkmate::assert_data_frame(parameters, min.rows = 1, col.names = "named")
+  checkmate::assert_count(seed, null.ok = TRUE)
 
   # read sample records file
   v <- readLines(files[1])
@@ -630,6 +643,7 @@ mds_samples <- function(files, tz, dl, parameters) {
 
   # represent radionuclide result value using confidence interval
   conf <- 0.95
+  set.seed(seed)
   error <- d$lab_sd_va * stats::qnorm(1 - (1 - conf) / 2)
   error[is.na(error)] <- 0
   li <- d$result_va - error
@@ -653,6 +667,9 @@ mds_samples <- function(files, tz, dl, parameters) {
   is <- d$remark_cd == "<"
   d$lab_li_va[is] <- 0
   d$lab_ui_va[is] <- d$result_va[is]
+
+  # set correct date type for analysis date
+  d$anl_dt <- as.POSIXct(d$anl_dt, tz = tz, format = "%Y%m%d")
 
   # convert character to factor class
   cols <- c(
@@ -697,7 +714,8 @@ mds_samples <- function(files, tz, dl, parameters) {
     "pcode",
     "rep_pair_id",
     "result_tx",
-    "remark"
+    "remark",
+    "anl_dt"
   )
   d <- d[idxs, cols]
   rownames(d) <- NULL
@@ -875,9 +893,21 @@ mds_sites <- function(file, crs) {
   d$construction_dt <- as.character(d$construction_dt) |>
     as.Date(tryFormats = c("%Y%m%d", "%Y%m", "%Y"))
 
+  coord_accuracies <- c(
+    "H" = 0.01,
+    "1" = 0.1,
+    "5" = 0.5,
+    "S" = 1,
+    "T" = 10,
+    "R" = 3,
+    "F" = 5
+  )
+  checkmate::assert_subset(d$coord_acy_cd, choices = names(coord_accuracies))
+  d$coord_acy_va <- coord_accuracies[d$coord_acy_cd]
+
   cols <- c(
     "coord_meth_cd",
-    "coord_acy_cd",
+    "coord_acy_va",
     "alt_meth_cd",
     "reliability_cd",
     "aqfr_type_cd",
@@ -905,7 +935,7 @@ mds_sites <- function(file, crs) {
     "station_nm",
     "site_no",
     "coord_meth_cd",
-    "coord_acy_cd",
+    "coord_acy_va",
     "alt_va",
     "alt_meth_cd",
     "alt_acy_va",
@@ -1266,28 +1296,6 @@ mds_percponds <- function(file, crs) {
 }
 
 
-# Mountain Ranges and Buttes (mountains) -----
-
-mds_mountains <- function(file, crs, sp_extent) {
-
-  # check arguments
-  checkmate::assert_file_exists(file, access = "r")
-  checkmate::assert_class(crs, classes = "crs")
-  checkmate::assert_class(sp_extent, "bbox")
-
-  sp <- sf::st_read(dsn = file, agr = "identity") |>
-    sf::st_make_valid() |>
-    sf::st_transform(crs = crs, check = TRUE) |>
-    sf::st_crop(sp_extent)
-
-  idxs <- tolower(sp$name) |> stringi::stri_order(numeric = TRUE)
-  sp <- sp[idxs, ]
-  rownames(sp) <- NULL
-
-  sp
-}
-
-
 # State of Idaho Boundary (idaho) -----
 
 mds_idaho <- function(url, cachedir, crs) {
@@ -1392,67 +1400,64 @@ mds_counties <- function(url, cachedir, crs, sp_extent) {
 
 # Road Netowrk (roads) -----
 
-mds_roads <- function(urls, cachedir, crs, sp_extent) {
+mds_roads <- function(prisec_url, all_urls, cachedir, crs, sp_extent) {
 
   # check arguments
-  checkmate::assert_character(urls, len = 2, any.missing = FALSE)
+  checkmate::assert_string(prisec_url)
+  checkmate::assert_character(all_urls, min.len = 1, any.missing = FALSE)
   checkmate::assert_directory_exists(cachedir, access = "rw")
   checkmate::assert_class(crs, classes = "crs")
   checkmate::assert_class(sp_extent, "bbox")
 
   # read primary and secondary roads file
-  file <- file.path(cachedir, basename(urls[1]))
+  file <- file.path(cachedir, basename(prisec_url))
   if (!checkmate::test_file_exists(file)) {
-    assert_url(urls[1])
-    utils::download.file(url = urls[1], destfile = file, mode = "wb")
+    assert_url(prisec_url)
+    utils::download.file(url = prisec_url, destfile = file, mode = "wb")
   }
   files <- utils::unzip(file, exdir = tempdir())
-  prisec_roads <- grep(".shp$", files, value = TRUE) |>
-    sf::st_read() |>
-    sf::st_make_valid()
+  prisec_roads <- grep(".shp$", files, value = TRUE) |> sf::st_read() |> sf::st_make_valid()
 
-  # read all roads file
-  file <- file.path(cachedir, basename(urls[2]))
-  if (!checkmate::test_file_exists(file)) {
-    assert_url(urls[2])
-    utils::download.file(url = urls[2], destfile = file, mode = "wb")
+  # read county road files
+  all_roads <- NULL
+  for (url in all_urls) {
+    file <- file.path(cachedir, basename(url))
+    if (!checkmate::test_file_exists(file)) {
+      assert_url(url)
+      utils::download.file(url = url, destfile = file, mode = "wb")
+    }
+    files <- utils::unzip(file, exdir = tempdir())
+    spdf <- grep(".shp$", files, value = TRUE) |>
+      sf::st_read() |>
+      sf::st_make_valid()
+    all_roads <- rbind(all_roads, spdf)
   }
-  files <- utils::unzip(file, exdir = tempdir())
-  all_roads <- grep(".shp$", files, value = TRUE) |>
-    sf::st_read() |>
-    sf::st_make_valid()
 
-  is <- !(all_roads[["LINEARID"]] %in% prisec_roads[["LINEARID"]])
-  other_roads <- all_roads[is, ]
-
-  prisec_roads$prisec_fl <- TRUE
-  other_roads$prisec_fl <- FALSE
-
-  sp <- rbind(prisec_roads, other_roads) |>
+  spdf <- all_roads |>
     sf::st_make_valid() |>
     sf::st_transform(crs = crs) |>
     sf::st_crop(sp_extent)
-  rownames(sp) <- NULL
-
-  cols <- c(
-    "name" = "FULLNAME",
-    "id" = "LINEARID",
-    "route_tp" = "RTTYP",
-    "prisec_fl" = "prisec_fl"
+  rownames(spdf) <- NULL
+  spdf <- spdf[, "LINEARID"]
+  spdf <- stats::aggregate(
+    spdf[, "geometry"],
+    by = list(spdf[["LINEARID"]]),
+    FUN = mean
   )
-  sp <- sp[, cols]
-  colnames(sp) <- c(names(cols), "geometry")
+  colnames(spdf) <- c("id", "geometry")
 
-  sp$route_tp <- as.factor(sp$route_tp)
+  idxs <- match(spdf$id, all_roads[["LINEARID"]])
+  spdf$name <- all_roads[["FULLNAME"]][idxs]
 
-  idxs <- order(
-    stringi::stri_rank(tolower(sp$name), numeric = TRUE),
-    sp$id
-  )
-  sp <- sp[idxs, ]
-  rownames(sp) <- NULL
+  spdf$prisec_fl <- spdf$id %in% prisec_roads[["LINEARID"]]
 
-  sp
+  spdf <- spdf[, c("name", "id", "prisec_fl", "geometry")]
+  idxs <- spdf$name |> tolower() |> stringi::stri_rank(numeric = TRUE) |> order(spdf$id)
+  spdf <- spdf[idxs, ]
+  rownames(spdf) <- NULL
+  spdf <- sf::st_make_valid(spdf)
+
+  spdf
 }
 
 
@@ -1526,7 +1531,7 @@ mds_streams <- function(url, cachedir, crs, sp_extent) {
     utils::download.file(url = url, destfile = file, mode = "wb")
   }
   sprintf("7z e -aoa -bd -o\"%s\" \"%s\"", tempdir(), file) |> system()
-  sp <- file.path(tempdir(), "NHDFlowline.shp") |>
+  spdf <- file.path(tempdir(), "NHDFlowline.shp") |>
     sf::st_read(agr = "constant") |>
     sf::st_make_valid() |>
     sf::st_transform(crs = crs) |>
@@ -1537,36 +1542,30 @@ mds_streams <- function(url, cachedir, crs, sp_extent) {
     "id" = "COMID",
     "reach_cd" = "REACHCODE",
     "gnis_id" = "GNIS_ID",
-    "feature_tp" = "FTYPE",
-    "resolution_cd" = "RESOLUTION"
+    "feature_tp" = "FTYPE"
   )
-  sp <- sp[, cols]
-  names(sp) <- c(names(cols), "geometry")
+  spdf <- spdf[, cols]
+  names(spdf) <- c(names(cols), "geometry")
 
-  sf::st_agr(sp) <- c(
+  sf::st_agr(spdf) <- c(
     "gnis_nm" = "identity",
     "id" = "identity",
     "reach_cd" = "identity",
     "gnis_id" = "identity",
-    "feature_tp" = "constant",
-    "resolution_cd" = "constant"
+    "feature_tp" = "constant"
   )
 
-  is <- !is.na(sp$gnis_id)
-  sp <- sp[is, ]
+  is <- !is.na(spdf$gnis_id)
+  spdf <- spdf[is, ]
 
-  sp$id <- as.character(sp$id)
-  sp$feature_tp <- as.factor(sp$feature_tp)
-  sp$resolution_cd <- as.factor(sp$resolution_cd)
+  spdf$id <- as.character(spdf$id)
+  spdf$feature_tp <- as.factor(spdf$feature_tp)
 
-  idxs <- order(
-    stringi::stri_rank(tolower(sp$gnis_nm), numeric = TRUE),
-    sp$id
-  )
-  sp <- sp[idxs, ]
-  rownames(sp) <- NULL
+  idxs <- spdf$gnis_nm |> tolower() |> stringi::stri_rank() |> order(spdf$id)
+  spdf <- spdf[idxs, ]
+  rownames(spdf) <- NULL
 
-  sp
+  spdf
 }
 
 
@@ -1616,4 +1615,116 @@ mds_dem <- function(urls, cachedir, crs, sp_extent) {
   names(sr) <- "elevation"
 
   terra::wrap(sr)
+}
+
+
+# Tabulate Parameter Data ----
+
+tabulate_parm_data <- function(parameters, samples) {
+
+  # check arguments
+  checkmate::assert_data_frame(parameters, min.rows = 1, col.names = "named")
+  checkmate::assert_data_frame(samples, min.rows = 1, col.names = "named")
+
+  tbl <- parameters
+
+  x <- samples$sample_dt
+  by <- list("pcode" = samples$pcode)
+  d <- stats::aggregate(x, by = by, FUN = min)
+  names(d)[2] <- "min_dt"
+  tbl <- merge(tbl, d, by = "pcode")
+  d <- stats::aggregate(x, by = by, FUN = max)
+  names(d)[2] <- "max_dt"
+  tbl <- merge(tbl, d, by = "pcode")
+
+  tbl$min_dt <- as.Date(tbl$min_dt)
+  tbl$max_dt <- as.Date(tbl$max_dt)
+
+  x <- table(samples$pcode) |> as.array()
+  tbl$nrecords <- x[match(tbl$pcode, names(x))] |> as.integer()
+
+  tbl$nsites <- vapply(tbl$pcode,
+    FUN = function(cd) {
+      samples$site_no[samples$pcode %in% cd] |>
+        unique() |>
+        length()
+    },
+    FUN.VALUE = integer(1)
+  )
+
+  ranks <- tolower(tbl$parm_nm) |> stringi::stri_rank(numeric = TRUE)
+  idxs <- order(tbl$parm_group_nm, ranks)
+  cols <- c(
+    "pcode",
+    "min_dt",
+    "max_dt",
+    "nrecords",
+    "nsites"
+  )
+  tbl <- tbl[idxs, cols]
+
+  tbl
+}
+
+
+# Tabulate Site Data ----
+
+tabulate_site_data <- function(sites, samples, gwl, swm) {
+
+  # check arguments
+  checkmate::assert_class(sites, classes = "sf")
+  checkmate::assert_data_frame(samples, min.rows = 1, col.names = "named")
+  checkmate::assert_data_frame(gwl, min.rows = 1, col.names = "named")
+  checkmate::assert_data_frame(swm, min.rows = 1, col.names = "named")
+
+  dat <- sites |> as.data.frame()
+  dat$geometry <- NULL
+
+  x <- c(samples$sample_dt, gwl$lev_dt)
+  by <- list("site_no" = c(samples$site_no, gwl$site_no))
+
+  d <- stats::aggregate(x, by = by, FUN = min)
+  names(d)[2] <- "min_dt"
+  dat <- merge(dat, d, by = "site_no", all = TRUE)
+
+  d <- stats::aggregate(x, by = by, FUN = max)
+  names(d)[2] <- "max_dt"
+  dat <- merge(dat, d, by = "site_no", all = TRUE)
+
+  dat$min_dt <- as.Date(dat$min_dt)
+  dat$max_dt <- as.Date(dat$max_dt)
+
+  x <- table(gwl$site_no) |> as.array()
+  ngwl <- x[match(dat$site_no, names(x))]
+
+  x <- table(swm$site_no) |> as.array()
+  nswm <- x[match(dat$site_no, names(x))]
+
+  dat$nmeas <- cbind(ngwl, nswm) |>
+    apply(MARGIN = 1, FUN = sum, na.rm = TRUE)
+
+  x <- table(samples$site_no) |> as.array()
+  dat$nsamples <- x[match(dat$site_no, names(x))] |> as.integer()
+  dat$nsamples[is.na(dat$nsamples)] <- 0L
+
+  is <- !is.na(samples$rep_pair_id) &
+    samples$sample_type_cd == "7"
+  x <- table(samples$site_no[is]) |> as.array()
+  dat$nreps <- x[match(dat$site_no, names(x))] |> as.integer()
+  dat$nreps[is.na(dat$nreps)] <- 0L
+
+  ranks <- tolower(dat$site_nm) |> stringi::stri_rank(numeric = TRUE)
+  idxs <- order(dat$network_cd, ranks, dat$well_depth_va)
+  cols <- c(
+    "site_no",
+    "min_dt",
+    "max_dt",
+    "nmeas",
+    "nsamples",
+    "nreps"
+  )
+  dat <- dat[idxs, cols]
+  rownames(dat) <- NULL
+
+  dat
 }

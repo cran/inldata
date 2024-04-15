@@ -13,7 +13,6 @@
 #'       sequence of points that form a closed, non-self-intersecting ring; the first ring denotes the exterior ring,
 #'       zero or more subsequent rings denote holes in this exterior ring.}
 #'   }
-#'   See [`crs`] dataset for coordinate reference system information.
 #'
 #' @source The ESPR boundary was digitized from 7.5' quads within and in the vicinity of the Idaho
 #'   National Laboratory by the U.S. Geological Survey

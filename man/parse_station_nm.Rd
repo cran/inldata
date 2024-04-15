@@ -22,7 +22,7 @@ x <- c(
   "03N 29E 33CCC1 MIDDLE 2051 PORT6 ZONE6 826.8FT",
   "MUD LAKE NR TERRETON ID"
 )
-inldata::parse_station_nm(x)
+parse_station_nm(x)
 }
 \author{
 J.C. Fisher, U.S. Geological Survey, Idaho Water Science Center

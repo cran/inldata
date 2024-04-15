@@ -3,14 +3,14 @@
 \docType{data}
 \name{samples}
 \alias{samples}
-\title{Water-Quality Data Records}
+\title{Discrete Sample Data}
 \format{
 A data frame with columns:
 \describe{
 \item{\code{site_nm}}{Local site name.}
 \item{\code{sample_dt}}{Date and time the sample was collected, in "America/Denver" time zone.
 Missing values of time were substituted with "12:00".}
-\item{\code{parm_short_nm}}{USGS parameter short name, such as "pH".}
+\item{\code{parm_short_nm}}{Parameter short name assigned by the USGS, such as "pH".}
 \item{\code{parm_unit}}{Parameter units of measure, see \code{\link{units}} dataset for unit descriptions.}
 \item{\code{remark_cd}}{Remark code (result level) used to qualify the parameter value.
 The codes and their meanings are as follows:
@@ -92,6 +92,7 @@ Replicate pairs are identified by matching a replicate sample (\code{sample_type
 its corresponding regular environmental sample (\code{sample_type_cd} equal to 9).}
 \item{\code{result_tx}}{Remark about the water quality result}
 \item{\code{remark}}{Remarks pertaining to changes applied after the records were obtained from NWIS.}
+\item{\code{anl_dt}}{Result analysis date.}
 }
 }
 \source{

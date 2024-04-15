@@ -3,7 +3,7 @@
 \docType{data}
 \name{sites}
 \alias{sites}
-\title{Descriptive Site Information}
+\title{Site Information}
 \format{
 A \href{https://r-spatial.github.io/sf/articles/sf1.html}{simple feature} with fields:
 \describe{
@@ -22,12 +22,7 @@ The codes and their meanings are as follows:
 "N" is not surveyed;
 "S" is a transit, theodolite, or other surveying method; and
 "X" is not applicable.}
-\item{\code{coord_acy_cd}}{Accuracy code for latitude/longitude values.
-The codes and their meanings are as follows:
-"1" is accurate to \eqn{\pm}{+/-} 1 second;
-"5" is accurate to \eqn{\pm}{+/-} 0.5 second;
-"H" is accurate to \eqn{\pm}{+/-} 0.1 second; and
-"S" is accurate to \eqn{\pm}{+/-} 1 second.}
+\item{\code{coord_acy_va}}{Accuracy of latitude/longitude value in seconds.}
 \item{\code{alt_va}}{Elevation of the land surface reference point,
 in feet above the North American Vertical Datum of 1988 (NAVD 88).}
 \item{\code{alt_meth_cd}}{Method code for measuring elevation.
@@ -98,9 +93,14 @@ The codes and their meanings are as follows:
 \item{\code{pos}}{Position specifier for site-labels on a map.
 Values of 1, 2, 3 and 4, respectively indicate positions below (south), to the left (west) of,
 above (north), and to the right (east) of the site coordinates.}
+\item{\code{min_dt}}{Date of first record.}
+\item{\code{max_dt}}{Date of last record.}
+\item{\code{nmeas}}{Number of measurments recorded at the site
+includes either groundwater-level or streamflow measurements.}
+\item{\code{nsamples}}{Number of water-quality samples collected from the site.}
+\item{\code{nreps}}{Number of replicate samples collected from the site.}
 \item{\code{geometry}}{Zero-dimensional geometry containing a single point.}
 }
-See \code{\link{crs}} dataset for coordinate reference system information.
 }
 \source{
 USGS site data acquired from the NWIS (U.S. Geological Survey, 2023).

@@ -10,7 +10,6 @@ A \href{https://r-spatial.github.io/sf/articles/sf1.html}{simple feature} with f
 \item{\code{geometry}}{Sequence of points connected by straight, non-self-intersecting line pieces,
 one-dimensional geometry.}
 }
-See \code{\link{crs}} dataset for coordinate reference system information.
 }
 \source{
 A GeoJSON file of the industrial waste ditch was created by the U.S. Geological Survey

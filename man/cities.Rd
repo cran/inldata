@@ -11,13 +11,12 @@ A \href{https://r-spatial.github.io/sf/articles/sf1.html}{simple feature} with f
 \item{\code{id}}{Unique identifier.}
 \item{\code{geometry}}{Zero-dimensional geometry containing a single point.}
 }
-See \code{\link{crs}} dataset for coordinate reference system information.
 }
 \source{
 Spatial point extracts were obtained from the
 Master Address File / Topologically Integrated Geographic Encoding and Referencing
-(\href{https://www.census.gov/geographies/mapping-files/time-series/geo/tiger-line-file.2022.html#list-tab-ZTNQS959OZX8M0ODED}{MAF/TIGER})
-Database (MTDB), 2022 data collection, released September 30, 2022. Which is a part of the
+(\href{https://www.census.gov/geographies/mapping-files/time-series/geo/tiger-line-file.html}{MAF/TIGER})
+Database (MTDB), 2023 data collection, released November 22, 2023. Which is a part of the
 U.S. Department of Commerce, U.S. Census Bureau, Geography Division/Cartographic Products Branch.
 The centroids of these extracts were cropped to the study area, and any non-essential data was removed.
 }
@@ -25,8 +24,7 @@ The centroids of these extracts were cropped to the study area, and any non-esse
 cities
 }
 \description{
-Cities and towns (populated places) in the vicinity of Idaho National Laboratory,
-eastern Idaho as of January 1, 2022.
+Cities and towns (populated places) in the vicinity of Idaho National Laboratory, eastern Idaho.
 }
 \examples{
 print(cities)

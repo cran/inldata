@@ -19,7 +19,6 @@ Abbreviations and descriptions are as follows:
 sequence of points that form a closed, non-self-intersecting ring; the first ring denotes the exterior ring,
 zero or more subsequent rings denote holes in this exterior ring.}
 }
-See \code{\link{crs}} dataset for coordinate reference system information.
 }
 \source{
 U.S. Geological Survey

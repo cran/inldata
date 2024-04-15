@@ -20,7 +20,6 @@
 #'          "RWMC" Radioactive Waste Management Complex.}
 #'     \item{`geometry`}{Set of polygons, where a polygon is a geometry with a positive area (two-dimensional).}
 #'   }
-#'   See [`crs`] dataset for coordinate reference system information.
 #'
 #' @source A GeoJSON file of the facilities was created by the U.S. Geological Survey
 #'   [Idaho National Laboratory Project Office](https://www.usgs.gov/centers/idaho-water-science-center/science/idaho-national-laboratory-project-office)

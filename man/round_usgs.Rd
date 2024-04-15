@@ -22,7 +22,7 @@ Rounds the values in its first argument to the specified number of decimal place
 This function uses the U.S. Geological Survey rounding method.
 }
 \examples{
-inldata::round_usgs(x = rep(pi, 3), digits = c(1, 2, 3))
+round_usgs(x = rep(pi, 3), digits = c(1, 2, 3))
 }
 \author{
 J.C. Fisher, U.S. Geological Survey, Idaho Water Science Center

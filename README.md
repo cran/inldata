@@ -1,36 +1,37 @@
-inldata <img src="man/figures/logo.svg" alt="inldata" align="right" width="152px" />
-====================================================================================
+# inldata <img src="man/figures/logo.svg" alt="inldata" align="right" width="152px" />
 
 [![cran-version-image](https://www.r-pkg.org/badges/version/inldata)](https://CRAN.R-project.org/package=inldata)
 [![pipeline-status-image](https://code.usgs.gov/inl/inldata/badges/main/pipeline.svg)](https://code.usgs.gov/inl/inldata/-/commits/main)
 [![coverage-status-image](https://code.usgs.gov/inl/inldata/badges/main/coverage.svg)](https://code.usgs.gov/inl/inldata/-/commits/main)
 
-Description
------------
+## Description
 
-The **inldata** package is a collection of analysis-ready datasets for
-the U.S. Geological Survey - Idaho National Laboratory (USGS-INL)
-groundwater and surface-water monitoring networks, administered by the
-[USGS-INL Project
+The **inldata** package is a practical resource that consolidates
+datasets for the groundwater and surface-water monitoring networks of
+the U.S. Geological Survey - Idaho National Laboratory (USGS-INL).
+Managed by the [USGS-INL Project
 Office](https://www.usgs.gov/centers/idaho-water-science-center/science/idaho-national-laboratory-project-office)
-in cooperation with the U.S. Department of Energy. The data collected
-from wells and surface-water stations at the Idaho National Laboratory
-and surrounding areas have been used to describe the effects of waste
-disposal on water contained in the eastern Snake River Plain aquifer,
-located in the southeastern part of Idaho, and the availability of water
-for long-term consumptive and industrial use. The package includes
-long-term monitoring records dating back to measurements from 1922.
-Geospatial data describing the areas from which samples were collected
-or observations were made are also included in the package. Bundling
-this data into a single [R](https://www.r-project.org/) package
-significantly reduces the magnitude of data processing for researchers
-and provides a way to distribute the data along with its documentation
-in a standard format. Geospatial datasets are made available in a common
-projection and datum, and geohydrologic data have been structured to
-facilitate analysis.
+in collaboration with the U.S. Department of Energy, it provides data
+from the Idaho National Laboratory and surrounding areas. This data is
+crucial in understanding the effects of waste disposal on the eastern
+Snake River Plain aquifer in southeastern Idaho and assessing the
+long-term availability of water.
 
-Installation
-------------
+The package compiles historical water-quality samples from 1949 to 2024,
+groundwater-level measurements from 1922 to 2024, and surface-water
+measurements from 1959 to 2024. Geospatial data, which outlines the
+areas of sample collection or observation, is also part of the package.
+
+By integrating this data into a single [R](https://www.r-project.org/)
+package, the process of data handling is simplified for researchers. It
+also offers a standard format for data distribution along with its
+documentation. The geospatial datasets are provided in a common
+projection and datum, and the geohydrologic data is structured to
+facilitate analysis. Overall, the **inldata** package serves as a
+convenient tool for those studying the impact of waste disposal on water
+quality and availability.
+
+## Installation
 
 To install the current release of the package from
 [CRAN](https://CRAN.R-project.org/package=inldata), you can use the
@@ -61,8 +62,7 @@ remotes::install_gitlab("inl/inldata@develop",
 )
 ```
 
-Usage
------
+## Usage
 
 Detailed descriptions of the datasets, along with practical examples
 illustrating their application, are readily accessible in the help pages
@@ -74,8 +74,7 @@ library("inldata")
 help(package = "inldata")
 ```
 
-Authors
--------
+## Authors
 
 -   Jason C. Fisher (ORCID iD
     [0000-0001-9032-8912](https://orcid.org/0000-0001-9032-8912))
@@ -84,31 +83,25 @@ Authors
 -   Kerri C. Treinen (ORCID iD
     [0000-0003-0645-6810](https://orcid.org/0000-0003-0645-6810))
 
-Point of Contact
-----------------
+## Point of Contact
 
-Jason C. Fisher
-(<a href="mailto:jfisher@usgs.gov" class="email">jfisher@usgs.gov</a>)
+Jason C. Fisher (<jfisher@usgs.gov>)
 
-Suggested Citations
--------------------
+## Suggested Citations
 
 To cite **inldata** in publications, please use:
 
 Fisher, J.C., Trcka, A.R., Treinen, K.C., 2024, inldata—Collection of
 datasets for the U.S. Geological Survey - Idaho National Laboratory
 groundwater and surface-water monitoring networks, v1.1: U.S. Geological
-Survey software release, R package,
-<a href="https://doi.org/10.5066/P9IAKQOR" class="uri">https://doi.org/10.5066/P9IAKQOR</a>.
+Survey software release, R package, <https://doi.org/10.5066/P9IAKQOR>.
 
 Fisher, J.C., Trcka, A.R., Treinen, K.C., 2024, Datasets for the U.S.
 Geological Survey - Idaho National Laboratory groundwater and
 surface-water monitoring networks, v1.1: U.S. Geological Survey data
-release,
-<a href="https://doi.org/10.5066/P9UWRYR4" class="uri">https://doi.org/10.5066/P9UWRYR4</a>.
+release, <https://doi.org/10.5066/P9UWRYR4>.
 
-Contributing
-------------
+## Contributing
 
 We value your contributions and suggestions on how to make these
 materials more useful to the community. Please feel free to share your
@@ -117,8 +110,7 @@ tracker](https://code.usgs.gov/inl/inldata/-/issues) or opening a [merge
 request](https://code.usgs.gov/inl/inldata/-/merge_requests) to
 contribute.
 
-Code of Conduct
----------------
+## Code of Conduct
 
 All contributions to- and interactions surrounding- this project will
 abide by the [USGS Code of Scientific
@@ -126,8 +118,7 @@ Conduct](https://www.usgs.gov/office-of-science-quality-and-integrity/fundamenta
 
 <!-- Embedded References -->
 
-Disclaimer
-----------
+## Disclaimer
 
 This software is preliminary or provisional and is subject to revision.
 It is being provided to meet the need for timely best science. The
@@ -142,8 +133,7 @@ authorized or unauthorized use of the software.
 Any use of trade, product, or firm names is for descriptive purposes
 only and does not imply endorsement by the U.S. Government.
 
-License
--------
+## License
 
 Unless otherwise noted, this project is in the public domain in the
 United States because it contains materials that originally came from
@@ -184,8 +174,7 @@ the author or the affirmer.
 
 <!-- Embedded References -->
 
-Support
--------
+## Support
 
 The Idaho National Laboratory Project Office of the USGS supports the
 development and maintenance of **inldata**. Resources are available
@@ -193,8 +182,7 @@ primarily for maintenance and responding to user questions, and the
 development team determines the priorities for the development of new
 features.
 
-Additional Publication Details
-------------------------------
+## Additional Publication Details
 
 This table contains additional metadata about this publication that is
 not found in other parts of the page.
@@ -231,7 +219,7 @@ Year published
 Version
 </th>
 <td>
-1.1
+<a href='https://code.usgs.gov/inl/inldata/-/tree/v1.1.1'>1.1.1</a>
 </td>
 </tr>
 <tr>

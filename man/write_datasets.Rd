@@ -7,6 +7,7 @@
 write_datasets(
   package,
   destdir = getwd(),
+  formats = NULL,
   overwrite = TRUE,
   include = NULL,
   exclude = NULL,
@@ -20,6 +21,13 @@ Name of a package.}
 
 \item{destdir}{'character' string.
 Destination directory to write files, with tilde-expansion performed.}
+
+\item{formats}{'character' vector.
+Formats for saving datasets.
+Choose from one or more of the following formats:
+\code{csv}, \code{geojson}, \code{json}, \code{parquet}, \code{shp}, \code{tiff}, \code{txt}, and \code{xlsx}.
+Please refer to the \emph{details} section for a description of each format.
+All file formats are saved to the disk by default.}
 
 \item{overwrite}{'logical' flag.
 Whether to overwrite an existing file.}
@@ -44,14 +52,26 @@ Whether to suppress printing of debugging information.}
 Invisibly returns the output file path(s).
 }
 \description{
-Write content of package datasets to non-proprietary, open, documented standard
-file formats that are more likely to be accessible in the future.
-Requires that the \pkg{jsonlite} package is available.
+Exports the content of package datasets into non-proprietary, open,
+and well-documented standard file formats, enhancing their accessibility for future use.
+It supports multiple formats:
+CSV,
+JSON (requires \code{jsonlite} package),
+Arrow Parquet (requires \code{arrow} package),
+Excel XLMS (requires \code{writexl} package),
+GeoJSON,
+Shapefile, and
+GeoTIFF.
 }
 \details{
-A simple-feature dataset (class 'sf' or 'sfc') is written to a GeoJSON file.
-A spatial-raster dataset (class 'SpatRaster' or 'PackedSpatRaster') is written to a GeoTIFF file.
-A non-spatial dataset is written to a JSON file.
+Different types of datasets are written to various file formats.
+For instance, a dataset in the form of a data table (\code{data.frame} class) is exported to
+a CSV (\code{csv}), JSON (\code{json}), Parquet (\code{parquet}), and Spreadsheet (\code{xlsx}) file.
+A dataset representing simple features (\code{sf} or \code{sfc} class) is exported to
+a GeoJSON (\code{geojson}) and Shapefile (\code{shp}) file.
+A spatial-raster dataset (\code{SpatRaster} or \code{PackedSpatRaster} class) is exported to
+a GeoTIFF (\code{tiff}) file.
+Lastly, a coordinate reference system (\code{crs} class) is exported to a text (\code{txt}) file.
 }
 \examples{
 dir <- tempfile("")
@@ -68,4 +88,3 @@ unlink(dir, recursive = TRUE)
 \author{
 J.C. Fisher, U.S. Geological Survey, Idaho Water Science Center
 }
-\keyword{internal}

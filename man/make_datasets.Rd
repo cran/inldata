@@ -9,10 +9,12 @@ make_datasets(
   destdir = file.path(path, "data"),
   clean = FALSE,
   tz = "America/Denver",
+  census_yr = 2023,
   buffer_dist = 1000,
   warn = 1,
   timeout = 10,
-  compress = "xz"
+  compress = "xz",
+  seed = 0L
 )
 }
 \arguments{
@@ -34,6 +36,9 @@ Whether to delete all pre-existing R-data files in the destination directory.}
 Defaults to Mountain Standard Time (North America).
 See \code{\link{OlsonNames}} for time zone information.}
 
+\item{census_yr}{'integer' number.
+United States census year.}
+
 \item{buffer_dist}{'numeric' number.
 Buffer distance for the study area defined by the bounding of the sample \code{\link{sites}} dataset.
 The buffer distance is measured in units of the coordinate reference system
@@ -52,6 +57,9 @@ Defaults to 10 minutes.}
 Whether compression should be used when saving a dataset to file.
 Character strings "auto", "gzip", "bzip2" and "xz" (default) are accepted.
 See the \code{\link{save}} function for details on compression types.}
+
+\item{seed}{'integer' count.
+Random number generator state, used to create reproducible results.}
 }
 \value{
 Returns the paths to the newly created R Data files invisibly.
@@ -94,7 +102,8 @@ You can specify the path to the cache directory by setting an environment variab
 By default the location of the cache directory is determined by the \code{\link[=get_cache_dir]{get_cache_dir()}} command.
 }
 \examples{
-# Example requires that the path be set to the inldata package source directory.
+# Example requires that the 'path' argument be specified as
+# the top-level directory of the inldata package repository.
 \dontrun{
 make_datasets(destdir = tempfile(""))
 }

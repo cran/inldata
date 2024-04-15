@@ -13,13 +13,12 @@ A \href{https://r-spatial.github.io/sf/articles/sf1.html}{simple feature} with f
 sequence of points that form a closed, non-self-intersecting ring; the first ring denotes the exterior ring,
 zero or more subsequent rings denote holes in this exterior ring.}
 }
-See \code{\link{crs}} dataset for coordinate reference system information.
 }
 \source{
 Spatial polygon extracts were obtained from the
 Master Address File / Topologically Integrated Geographic Encoding and Referencing
-(\href{https://www.census.gov/geographies/mapping-files/time-series/geo/tiger-line-file.2022.html#list-tab-ZTNQS959OZX8M0ODED}{MAF/TIGER})
-Database (MTDB), 2022 data collection, released September 30, 2022. Which is a part of the
+(\href{https://www.census.gov/geographies/mapping-files/time-series/geo/tiger-line-file.html}{MAF/TIGER})
+Database (MTDB), 2023 data collection, released November 22, 2023. Which is a part of the
 U.S. Department of Commerce, U.S. Census Bureau, Geography Division/Cartographic Products Branch.
 These polygons were cropped to study area, and any non-essential data was removed.
 }
@@ -27,8 +26,7 @@ These polygons were cropped to study area, and any non-essential data was remove
 counties
 }
 \description{
-County boundaries in the vicinity of Idaho National Laboratory,
-eastern Idaho, as of January 1, 2022.
+County boundaries in the vicinity of Idaho National Laboratory, eastern Idaho.
 }
 \examples{
 print(counties)

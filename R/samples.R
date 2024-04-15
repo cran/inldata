@@ -1,4 +1,4 @@
-#' Water-Quality Data Records
+#' Discrete Sample Data
 #'
 #' @description Water-quality information for both groundwater and surface water
 #'   collected from monitoring stations in and around the Idaho National Laboratory, Idaho.
@@ -13,7 +13,7 @@
 #'   \item{`site_nm`}{Local site name.}
 #'   \item{`sample_dt`}{Date and time the sample was collected, in "America/Denver" time zone.
 #'     Missing values of time were substituted with "12:00".}
-#'   \item{`parm_short_nm`}{USGS parameter short name, such as "pH".}
+#'   \item{`parm_short_nm`}{Parameter short name assigned by the USGS, such as "pH".}
 #'   \item{`parm_unit`}{Parameter units of measure, see [`units`] dataset for unit descriptions.}
 #'   \item{`remark_cd`}{Remark code (result level) used to qualify the parameter value.
 #'     The codes and their meanings are as follows:
@@ -95,6 +95,7 @@
 #'     its corresponding regular environmental sample (`sample_type_cd` equal to 9).}
 #'   \item{`result_tx`}{Remark about the water quality result}
 #'   \item{`remark`}{Remarks pertaining to changes applied after the records were obtained from NWIS.}
+#'   \item{`anl_dt`}{Result analysis date.}
 #' }
 #'
 #' @source Data were obtained from the NWIS-QWDATA database on January 22, 2024,

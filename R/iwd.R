@@ -9,7 +9,6 @@
 #'     \item{`geometry`}{Sequence of points connected by straight, non-self-intersecting line pieces,
 #'       one-dimensional geometry.}
 #'   }
-#'   See [`crs`] dataset for coordinate reference system information.
 #'
 #' @source A GeoJSON file of the industrial waste ditch was created by the U.S. Geological Survey
 #'   [Idaho National Laboratory Project Office](https://www.usgs.gov/centers/idaho-water-science-center/science/idaho-national-laboratory-project-office)

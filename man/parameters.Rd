@@ -3,7 +3,7 @@
 \docType{data}
 \name{parameters}
 \alias{parameters}
-\title{Parameter Information for Analytes}
+\title{Parameter Information}
 \format{
 A data frame with columns:
 \describe{
@@ -33,6 +33,10 @@ such as "10098-97-2" for Strontium-90.}
 (\href{https://sor.epa.gov/sor_internet/registry/substreg/home/overview/home.do}{SRS}) name,
 such as "Strontium-90".}
 \item{\code{parm_unit}}{Parameter units of measure, see \code{\link{units}} dataset for unit descriptions.}
+\item{\code{min_dt}}{Collection date of first sample analyzed for the parameter.}
+\item{\code{max_dt}}{Collection date of last sample analyzed for the parameter.}
+\item{\code{nrecords}}{Number of records associated with the parameter.}
+\item{\code{nsites}}{Number of sampling sites where the parameter was observed.}
 }
 }
 \source{
@@ -44,9 +48,9 @@ for "Trihalomethanes (four), total, from SDWA NPDWR" was shorten to its preferre
 parameters
 }
 \description{
-Parameter code information for selected chemical constituents,
+Parameter information for selected chemical constituents,
 organic compounds, and radionuclides measured for in water samples collected from
-wells in the U.S. Geological Survey (USGS) water-quality aquifer monitoring network,
+monitoring sites in the U.S. Geological Survey (USGS) water-quality monitoring network,
 Idaho National Laboratory and vicinity, Idaho.
 }
 \examples{

@@ -24,9 +24,9 @@ Returns a character vector.
 Concatenate character vectors and omit empty strings.
 }
 \examples{
-inldata::paste_strings(letters, c(), c(1, 2, 3))
+paste_strings(letters, c(), c(1, 2, 3))
 
-inldata::paste_strings(letters, c(), c(1, 2, 3), recycle0 = TRUE)
+paste_strings(letters, c(), c(1, 2, 3), recycle0 = TRUE)
 }
 \author{
 J.C. Fisher, U.S. Geological Survey, Idaho Water Science Center

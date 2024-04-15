@@ -19,7 +19,6 @@ Facility abbreviations and descriptions are as follows:
 "RWMC" Radioactive Waste Management Complex.}
 \item{\code{geometry}}{Set of polygons, where a polygon is a geometry with a positive area (two-dimensional).}
 }
-See \code{\link{crs}} dataset for coordinate reference system information.
 }
 \source{
 A GeoJSON file of the facilities was created by the U.S. Geological Survey

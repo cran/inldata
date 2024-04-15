@@ -9,7 +9,6 @@ A compressed \code{\link[terra:SpatRaster-class]{SpatRaster}} class object with 
 \describe{
 \item{\code{elevation}}{Land-surface elevations in feet above the North American Vertical Datum of 1988 (NAVD 88).}
 }
-See \code{\link{crs}} dataset for coordinate reference system information.
 }
 \source{
 The National Map

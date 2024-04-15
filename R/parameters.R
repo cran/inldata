@@ -1,8 +1,8 @@
-#' Parameter Information for Analytes
+#' Parameter Information
 #'
-#' @description Parameter code information for selected chemical constituents,
+#' @description Parameter information for selected chemical constituents,
 #'   organic compounds, and radionuclides measured for in water samples collected from
-#'   wells in the U.S. Geological Survey (USGS) water-quality aquifer monitoring network,
+#'   monitoring sites in the U.S. Geological Survey (USGS) water-quality monitoring network,
 #'   Idaho National Laboratory and vicinity, Idaho.
 #'
 #' @format A data frame with columns:
@@ -33,6 +33,10 @@
 #'       ([SRS](https://sor.epa.gov/sor_internet/registry/substreg/home/overview/home.do)) name,
 #'       such as "Strontium-90".}
 #'     \item{`parm_unit`}{Parameter units of measure, see [`units`] dataset for unit descriptions.}
+#'     \item{`min_dt`}{Collection date of first sample analyzed for the parameter.}
+#'     \item{`max_dt`}{Collection date of last sample analyzed for the parameter.}
+#'     \item{`nrecords`}{Number of records associated with the parameter.}
+#'     \item{`nsites`}{Number of sampling sites where the parameter was observed.}
 #'   }
 #'
 #' @source USGS water data acquired from the National Water Information System (U.S. Geological Survey, 2023).

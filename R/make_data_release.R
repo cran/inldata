@@ -10,6 +10,7 @@
 #'   or a named list with the equivalent information.
 #' @param ...
 #'   Additional arguments to be passed to the [`write_datasets`] function.
+#'   The `formats` argument, which is specified within the function, is the exception.
 #' @param bounding 'bbox', 'sf', 'SpatRaster', or 'PackedSpatRaster' spatial feature.
 #'   Object to compute spatial bounding coordinates from, see [`sf::st_bbox`] function.
 #' @param rngdates 'Date' or 'POSIXct' vector.
@@ -37,12 +38,12 @@
 #'   metadata = system.file("extdata/metadata.json", package = "inldata"),
 #'   package = "inldata",
 #'   destdir = destdir,
-#'   include = c("crs", "dl", "inl"),
+#'   include = c("crs", "dl"),
 #'   quiet = TRUE,
-#'   bounding = inldata::sites,
+#'   bounding = sites,
 #'   rngdates = c(
-#'     inldata::samples$sample_dt,
-#'     inldata::gwl$lev_dt
+#'     samples$sample_dt,
+#'     gwl$lev_dt
 #'   )
 #' )
 #' str(l, 1)
@@ -63,7 +64,8 @@ make_data_release <- function(metadata,
 
   # check arguments
   if (checkmate::test_string(metadata)) {
-    metadata <- path.expand(metadata) |> normalizePath(winslash = "/") |> jsonlite::read_json()
+    metadata <- path.expand(metadata) |> normalizePath(winslash = "/") |>
+      jsonlite::read_json()
   } else {
     checkmate::assert_list(metadata, min.len = 1, names = "named")
   }
@@ -79,7 +81,12 @@ make_data_release <- function(metadata,
   checkmate::assert_multi_class(rngdates, classes = c("Date", "POSIXct"), null.ok = TRUE)
 
   # write package datasets to JSON files
-  ds_paths <- write_datasets(package = package, destdir = destdir, ...)
+  ds_paths <- write_datasets(
+    package = package,
+    destdir = destdir,
+    formats = c("geojson", "json", "tiff", "txt"),
+    ...
+  )
   ds_files <- basename(ds_paths)
   ds_names <- tools::file_path_sans_ext(ds_files)
 

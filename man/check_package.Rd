@@ -23,7 +23,7 @@ Stops execution if the package is missing from the name space.
 Check that a package is available.
 }
 \examples{
-inldata::check_package(pkg = "inldata", msg = "Dataset access")
+check_package(pkg = "inldata", msg = "Dataset access")
 }
 \author{
 J.C. Fisher, U.S. Geological Survey, Idaho Water Science Center

@@ -12,7 +12,6 @@
 #'   \describe{
 #'     \item{`elevation`}{Land-surface elevations in feet above the North American Vertical Datum of 1988 (NAVD 88).}
 #'   }
-#'   See [`crs`] dataset for coordinate reference system information.
 #'
 #' @source The National Map
 #'   ([TNM](https://www.usgs.gov/programs/national-geospatial-program/national-map))

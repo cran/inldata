@@ -24,7 +24,7 @@ utils::citEntry(
   series = "U.S. Geological Survey software release",
   year = "2024",
   note = "R package",
-  version = "1.1",
+  version = "1.1.1",
   doi = "10.5066/P9IAKQOR",
   textVersion = "Fisher, J.C., Trcka, A.R., Treinen, K.C., 2024, inldata---Collection of datasets for the U.S. Geological Survey - Idaho National Laboratory groundwater and surface-water monitoring networks, v1.1: U.S. Geological Survey software release, R package, https://doi.org/10.5066/P9IAKQOR."
 )
@@ -37,7 +37,7 @@ utils::citEntry(
   institution = "U.S. Geological Survey",
   series = "U.S. Geological Survey data release",
   year = "2024",
-  version = "1.1",
+  version = "1.1.1",
   doi = "10.5066/P9UWRYR4",
   textVersion = "Fisher, J.C., Trcka, A.R., Treinen, K.C., 2024, Datasets for the U.S. Geological Survey - Idaho National Laboratory groundwater and surface-water monitoring networks, v1.1: U.S. Geological Survey data release, https://doi.org/10.5066/P9UWRYR4."
 )

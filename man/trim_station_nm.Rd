@@ -21,7 +21,7 @@ x <- c(
   "03N 29E 12DDB1    FIRE STA 2",
   "03N 29E 24CCA1 MIDDLE 2050A PORT15 ZONE15 516.8FT"
 )
-inldata::trim_station_nm(x)
+trim_station_nm(x)
 }
 \author{
 J.C. Fisher, U.S. Geological Survey, Idaho Water Science Center

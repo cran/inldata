@@ -4,7 +4,7 @@ library("checkmate")
 using("checkmate")
 
 # test parsing of station name
-x <- inldata::parse_station_nm("03N 29E 33CCC1 MIDDLE 2051 PORT6 ZONE6 826.8FT")
+x <- parse_station_nm("03N 29E 33CCC1 MIDDLE 2051 PORT6 ZONE6 826.8FT")
 expect_set_equal(x, "MIDDLE 2051")
 
 # test parsing of help documentation
