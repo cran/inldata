@@ -22,7 +22,7 @@ Defaults to the temporary directory if the \pkg{rappdirs} package is unavailable
 You can specify the path to the cache directory by setting an environment variable named "CACHE_DIR".
 }
 \examples{
-get_cache_dir("test")
+dir <- get_cache_dir("test")
 
 clear_cache_dir("test")
 }

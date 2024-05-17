@@ -34,17 +34,15 @@
 #'
 #' @examples
 #' destdir <- tempfile("")
+#' rngdates <- c(samples$sample_dt, gwl$lev_dt) |> range()
 #' l <- make_data_release(
 #'   metadata = system.file("extdata/metadata.json", package = "inldata"),
 #'   package = "inldata",
 #'   destdir = destdir,
-#'   include = c("crs", "dl"),
+#'   include = "crs",
 #'   quiet = TRUE,
 #'   bounding = sites,
-#'   rngdates = c(
-#'     samples$sample_dt,
-#'     gwl$lev_dt
-#'   )
+#'   rngdates = rngdates
 #' )
 #' str(l, 1)
 #'
@@ -90,9 +88,11 @@ make_data_release <- function(metadata,
   ds_files <- basename(ds_paths)
   ds_names <- tools::file_path_sans_ext(ds_files)
 
+  # check if working in package directory
+  is_pkg_dir <- test_pkg_dir(package)
+
   # parse help documentation for package datasets
-  is <- checkmate::test_directory_exists("man", access = "rw")
-  if (is) {
+  if (is_pkg_dir) {
     rds <- parse_rd_db(dir = getwd(), stages = "install")
   } else {
     rds <- parse_rd_db(package = package)
@@ -127,9 +127,23 @@ make_data_release <- function(metadata,
     d <- rd$format_table
     if (!is.null(d)) {
 
-      # get dataset object
-      text <- paste(package, ds_names[i], sep = "::")
-      ds <- parse(text = text) |> eval()
+      # get dataset
+      envir <- new.env()
+      if (is_pkg_dir) {
+        nm <- load(
+          file = sprintf("data/%s.rda", ds_names[i]),
+          envir = envir,
+          verbose = FALSE
+        )
+      } else {
+        nm <- utils::data(
+          list = ds_names[i],
+          package = package,
+          envir = envir,
+          verbose = FALSE
+        )
+      }
+      ds <- envir[[nm[1]]]
 
       # uncompress packed spatial raster objects
       if (inherits(ds, "PackedSpatRaster")) {
@@ -235,7 +249,11 @@ make_data_release <- function(metadata,
   metadata[[1]]$dataqual$lineage$procstep$procdate <- Sys.Date() |> format(format = "%Y") |> list()
 
   # get package citations
-  citations <- utils::citation(package = package)
+  if (is_pkg_dir) {
+    citations <- utils::readCitationFile("inst/CITATION")
+  } else {
+    citations <- utils::citation(package = package)
+  }
 
   # set URL data is available online
   url <- paste0("https://doi.org/", citations[[2]]$doi)
@@ -280,8 +298,12 @@ make_data_release <- function(metadata,
   }
 
   # get package URLs
-  urls <- utils::packageDescription(pkg = package)$URL
-  urls <- gsub("[\r\n]", "", urls) |> strsplit(split = ",") |> unlist()
+  if (is_pkg_dir) {
+    urls <- read.dcf("DESCRIPTION", fields = "URL") |> as.character()
+  } else {
+    urls <- utils::packageDescription(pkg = package)$URL
+  }
+  urls <- gsub("[\r\n]|[ ]", "", urls) |> strsplit(split = ",") |> unlist()
 
   # add cross-reference info
   metadata[[1]]$idinfo$crossref <- parse_citeinfo(

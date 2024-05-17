@@ -8,10 +8,12 @@ write_datasets(
   package,
   destdir = getwd(),
   formats = NULL,
+  gzip = NULL,
   overwrite = TRUE,
   include = NULL,
   exclude = NULL,
   pretty = TRUE,
+  full_names = TRUE,
   quiet = FALSE
 )
 }
@@ -25,9 +27,13 @@ Destination directory to write files, with tilde-expansion performed.}
 \item{formats}{'character' vector.
 Formats for saving datasets.
 Choose from one or more of the following formats:
-\code{csv}, \code{geojson}, \code{json}, \code{parquet}, \code{shp}, \code{tiff}, \code{txt}, and \code{xlsx}.
-Please refer to the \emph{details} section for a description of each format.
+\code{txt}, \code{json}, \code{csv}, \code{xlsx}, \code{parquet}, \code{geojson}, \code{shp}, and \code{tiff}.
+Please refer to the \emph{Details} section for a description of each format.
 All file formats are saved to the disk by default.}
+
+\item{gzip}{'character' vector.
+File \code{formats} that are eligible for Gzip compression.
+At present, it accommodates \code{txt}, \code{json}, and \code{geojson} formats exclusively.}
 
 \item{overwrite}{'logical' flag.
 Whether to overwrite an existing file.}
@@ -44,6 +50,9 @@ By default, none are excluded.}
 Whether to add indentation, whitespace, and newlines to JSON output (default is \code{TRUE}).
 See \code{\link[jsonlite:prettify]{prettify}} function for details.
 The tradeoff for human-readable output is a much larger file size.}
+
+\item{full_names}{'logical' flag.
+Whether the full paths of the files are returned (default).}
 
 \item{quiet}{'logical' flag.
 Whether to suppress printing of debugging information.}
@@ -78,6 +87,7 @@ dir <- tempfile("")
 write_datasets(
   package = "inldata",
   destdir = dir,
+  formats = c("txt", "csv", "json", "geojson"),
   include = c("crs", "dl", "inl"),
   pretty = FALSE,
   quiet = TRUE

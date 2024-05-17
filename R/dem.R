@@ -3,10 +3,6 @@
 #' @description The digital elevation model (DEM) for the Idaho National Laboratory and its vicinity in eastern Idaho.
 #'   A DEM is a representation of the land surface that uses a digital grid
 #'   to describe the elevation values of the terrain.
-#'   The spatial grid is composed of
-#'   \Sexpr{terra::unwrap(inldata::dem) |> nrow() |> format(big.mark = ",")} rows and
-#'   \Sexpr{terra::unwrap(inldata::dem) |> ncol() |> format(big.mark = ",")} columns, and
-#'   has cell sizes that are constant at 100 meters by 100 meters.
 #'
 #' @format A compressed [`SpatRaster`][terra::SpatRaster] class object with layer:
 #'   \describe{

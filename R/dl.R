@@ -4,14 +4,12 @@
 #'
 #' @format A data frame with columns:
 #'   \describe{
-#'     \item{`srsname`}{Substance Registry Services
-#'       ([SRS](https://sor.epa.gov/sor_internet/registry/substreg/home/overview/home.do))
-#'       name for constituents, such as "Strontium-90".}
+#'     \item{`parm_nm`}{Long parameter name,
+#'       such as "Strontium-90, water, unfiltered, picocuries per liter".}
 #'     \item{`pcode`}{U.S. Geological Survey 5-digit parameter code used to identify the constituent measured,
 #'       see [`parameters`] dataset for details. For example, the parameter code for Tritium is "07000".}
-#'     \item{`parm_unit`}{Parameter units of measure, see [`units`] dataset for unit descriptions.}
 #'     \item{`lab_det_lim_va`}{Laboratory detection limit concentration.}
-#'     \item{`sdate`}{Date that the detection limit went into effect.}
+#'     \item{`min_dt`}{Date that the detection limit went into effect.}
 #'     \item{`reference`}{Source of detection limit.
 #'       Reference citations are as follows:
 #'         "Bartholomay and others (2003, table 9)",

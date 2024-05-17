@@ -1,6 +1,6 @@
 Package: inldata
 Title: Collection of Datasets for the USGS-INL Monitoring Networks
-Version: 1.1.5
+Version: 1.2.1
 Authors@R: c(
     person(given = c("Jason", "C."),
            family = "Fisher", role = c("aut", "cre"),
@@ -25,7 +25,7 @@ Description: A collection of analysis-ready datasets for the
    eastern Snake River Plain aquifer, located in the southeastern part of
    Idaho, and the availability of water for long-term consumptive and
    industrial use. The package includes long-term monitoring records dating
-   back to measurements from 1949. Geospatial data describing the areas from
+   back to measurements from 1922. Geospatial data describing the areas from
    which samples were collected or observations were made are also included in
    the package. Bundling this data into a single package significantly reduces
    the magnitude of data processing for researchers and provides a way to
@@ -34,11 +34,11 @@ Description: A collection of analysis-ready datasets for the
    geohydrologic data have been structured to facilitate analysis.
 Depends: R (>= 4.1)
 Imports: checkmate, sf, stats, stringi, terra, tools, utils
-Suggests: arrow, connectapi, covr, dataRetrieval, DiagrammeR,
+Suggests: archive, arrow, connectapi, covr, dataRetrieval, DiagrammeR,
         DiagrammeRsvg, dm, fontawesome, htmltools, htmlwidgets, httr,
         inlcolor, jsonlite, knitr, pkgload, pkgbuild, pkgdown, plotrix,
-        rappdirs, reactable, renv, rmarkdown, roxygen2, rsconnect,
-        tinytest, V8, webmap, writexl, xml2
+        rappdirs, rcmdcheck, reactable, renv, rmarkdown, roxygen2,
+        rsconnect, tinytest, V8, webmap, writexl, xml2
 License: CC0
 URL: https://rconnect.usgs.gov/INLPO/inldata-main/,
         https://code.usgs.gov/inl/inldata
@@ -50,14 +50,16 @@ Copyright: This software is in the public domain because it contains
         USGS copyright policy at
         https://www.usgs.gov/information-policies-and-instructions/copyrights-and-credits
 Encoding: UTF-8
+SystemRequirements: libcurl4-openssl-dev pandoc libarchive-dev
+        libv8-dev (deb)
 LazyData: true
 LazyDataCompression: xz
 RoxygenNote: 7.3.1
 NeedsCompilation: no
-Packaged: 2024-04-15 17:45:46 UTC; jfisher
+Packaged: 2024-05-16 22:23:51 UTC; root
 Author: Jason C. Fisher [aut, cre] (<https://orcid.org/0000-0001-9032-8912>),
   Allison R. Trcka [aut] (<https://orcid.org/0000-0001-8498-4737>),
   Kerri C. Treinen [aut] (<https://orcid.org/0000-0003-0645-6810>)
 Maintainer: Jason C. Fisher <jfisher@usgs.gov>
 Repository: CRAN
-Date/Publication: 2024-04-15 19:10:11 UTC
+Date/Publication: 2024-05-17 23:40:11 UTC

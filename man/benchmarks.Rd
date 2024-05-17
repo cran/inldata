@@ -7,12 +7,10 @@
 \format{
 A data frame with columns:
 \describe{
-\item{\code{srsname}}{Substance Registry Services
-(\href{https://sor.epa.gov/sor_internet/registry/substreg/home/overview/home.do}{SRS}) name for constituents,
-such as "Strontium-90".}
+\item{\code{parm_nm}}{Long parameter name,
+such as "Strontium-90, water, unfiltered, picocuries per liter".}
 \item{\code{pcode}}{U.S. Geological Survey 5-digit parameter code used to identify the constituent measured,
 see \code{\link{parameters}} dataset for details. For example, the parameter code for Tritium is "07000".}
-\item{\code{parm_unit}}{Parameter units of measure, see \code{\link{units}} dataset for unit descriptions.}
 \item{\code{mcl}}{Maximum Contaminant Levels (MCLs),
 a standard set by the EPA for drinking water quality.
 An MCL is the legal threshold limit on the amount of a substance that is allowed

@@ -113,25 +113,6 @@ find_rd_tags <- function(rd, tags) {
 }
 
 
-# Function to drop tags from an Rd object,
-# Code adapted from the tools:::.Rd_drop_nodes_with_tags function in R 4.3,
-# released under the "GNU General Public License" version 2 license.
-drop_rd_tags <- function(rd, tags) {
-  checkmate::assert_class(rd, classes = "Rd")
-  checkmate::assert_character(tags, any.missing = FALSE, min.len = 1)
-  recurse <- function(x) {
-    if (is.list(x)) {
-      attrs <- attributes(x)
-      is <- get_rd_tags(x) |> match(table = tags) |> is.na()
-      x <- lapply(x[is], recurse)
-      attributes(x) <- attrs
-    }
-    x
-  }
-  recurse(rd)
-}
-
-
 # Function to get Rd tags
 get_rd_tags <- function(rd) {
   checkmate::assert_class(rd, classes = "Rd")

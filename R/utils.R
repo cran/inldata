@@ -94,9 +94,9 @@ trim_station_nm <- function(x) {
 #' @keywords internal
 #'
 #' @examples
-#' round_usgs(x = rep(pi, 3), digits = c(1, 2, 3))
+#' round_numbers(x = rep(pi, 3), digits = c(1, 2, 3))
 
-round_usgs <- function(x, digits = 0) {
+round_numbers <- function(x, digits = 0) {
   checkmate::assert_numeric(x)
   checkmate::assert_integerish(digits, max.len = length(x))
   z <- abs(x) * 10^digits + 0.5 + sqrt(.Machine$double.eps)
@@ -132,7 +132,7 @@ round_usgs <- function(x, digits = 0) {
 paste_strings <- function(..., collapse = " ", recycle0 = FALSE) {
   check_package(pkg = "stringi", msg = "Concatenating character vectors")
   checkmate::assert_string(collapse)
-  checkmate::assert_logical(recycle0)
+  checkmate::assert_flag(recycle0)
   dots <- list(...) |> lapply(FUN = as.character)
   lens <- lengths(dots)
   if (recycle0 && 0L %in% lens) {
@@ -232,6 +232,213 @@ get_file_size <- function(paths) {
         x |> round(digits = 2) |> paste("B") # bytes
       }
 
+    },
+    FUN.VALUE = character(1)
+  )
+}
+
+
+#' Test Location is Package Directory
+#'
+#' @description Test whether the working directory is located at the top level directory of the package.
+#'
+#' @param pkg 'character' string.
+#'   Package name.
+#'
+#' @return Formatted file size(s).
+#'
+#' @author J.C. Fisher, U.S. Geological Survey, Idaho Water Science Center
+#'
+#' @export
+#'
+#' @keywords internal
+#'
+#' @examples
+#' test_pkg_dir("inldata")
+
+test_pkg_dir <- function(pkg) {
+  checkmate::assert_string(pkg)
+  if (checkmate::test_file_exists("DESCRIPTION", access = "rw")) {
+    package <- read.dcf("DESCRIPTION", fields = "Package") |> as.character()
+    if (identical(package, pkg)) {
+      if (checkmate::test_directory_exists("inst", access = "rw")) {
+        return(TRUE)
+      }
+    }
+  }
+  FALSE
+}
+
+
+#' Date-Time Conversion
+#'
+#' @description Convert calendar date and times.
+#'
+#' @param dt 'character' vector.
+#'   Calendar date formatted as YYYY-MM-DD.
+#' @param tm 'character' vector.
+#'   Time in Greenwich Mean Time (UTC) formatted as HH:MM.
+#'   Vector length equal to the length of `dt`.
+#' @param tm_unset 'character' string.
+#'   Value if time is missing, noon by default.
+#' @param tz 'character' string.
+#'   Time zone specification to convert to.
+#'
+#' @return Returns an object of class 'POSIXct'.
+#'
+#' @author J.C. Fisher, U.S. Geological Survey, Idaho Water Science Center
+#'
+#' @export
+#'
+#' @keywords internal
+#'
+#' @examples
+#' as_posix_ct(
+#'   dt = c("2024-01-01", "2024-02-15", NA),
+#'   tm = c("14:30", NA, "11:11"),
+#'   tz = "America/Denver"
+#' )
+
+as_posix_ct <- function(dt, tm, tm_unset = "12:00", tz = "") {
+  checkmate::assert_character(dt, min.len = 1)
+  checkmate::assert_character(tm, len = length(dt))
+  checkmate::assert_string(tm_unset, n.chars = 5)
+  time <- tm
+  is <- is.na(time)
+  time[is] <- tm_unset
+  paste(dt, time) |>
+    as.POSIXct(tz = "GMT", format = "%Y-%m-%d %H:%M") |>
+    format(tz = tz) |>
+    as.POSIXct(tz = tz)
+}
+
+
+#' Extract Archive Contents
+#'
+#' @description Extract contents of an archive to a directory.
+#'   Requires that the \pkg{archive} package is available.
+#'
+#' @param file 'character' string.
+#'   File path to the archive.
+#' @param destdir 'character' string.
+#'   Destination directory to extract files to.
+#'   It will be created if necessary.
+#'   Defaults to the temporary directory.
+#'
+#' @return Invisibly returns the extracted path(s).
+#'
+#' @author J.C. Fisher, U.S. Geological Survey, Idaho Water Science Center
+#'
+#' @export
+#'
+#' @keywords internal
+#'
+#' @examples
+#' files <- system.file("extdata", "test.zip", package = "inldata") |>
+#'   extract_archive()
+#'
+#' unlink(files)
+
+extract_archive <- function(file, destdir = tempdir()) {
+
+  # check arguments
+  file <- path.expand(file) |>
+    normalizePath(winslash = "/", mustWork = FALSE)
+  checkmate::assert_file_exists(file, access = "r")
+  destdir <- path.expand(destdir) |>
+    normalizePath(winslash = "/", mustWork = FALSE)
+  dir.create(destdir, showWarnings = FALSE, recursive = TRUE)
+  checkmate::assert_directory_exists(destdir, access = "rw")
+
+  # check packages
+  check_package(pkg = "archive", msg = "Extracting contents of an archive")
+
+  # extract contents
+  files <- archive::archive_extract(archive = file, dir = destdir)
+
+  # get paths
+  paths <- file.path(destdir, files, fsep = "/")
+
+  invisible(paths)
+}
+
+
+#' Write Lines to a File
+#'
+#' @description Write text lines to a file.
+#'
+#' @param text 'character' vector.
+#'   Text to write to file.
+#' @param path 'character' string.
+#'   Path to the file.
+#' @param gz 'logical' flag.
+#'   Whether to compress the file using Gzip.
+#'   The `.gz` extension is added to the file `path`.
+#'
+#' @return Invisibly returns the extracted path(s).
+#'
+#' @author J.C. Fisher, U.S. Geological Survey, Idaho Water Science Center
+#'
+#' @export
+#'
+#' @keywords internal
+#'
+#' @examples
+#' path <- write_lines(
+#'   text = "Test",
+#'   path = tempfile(fileext = ".txt"),
+#'   gz = TRUE
+#' )
+#'
+#' unlink(path)
+
+write_lines <- function(text, path, gz = FALSE) {
+  checkmate::assert_character(text)
+  checkmate::assert_path_for_output(path, overwrite = TRUE)
+  checkmate::assert_flag(gz)
+  if (gz) {
+    path <- paste0(path, ".gz")
+    con <- gzfile(path, open = "w", encoding = "UTF-8")
+    on.exit(close(con))
+    writeLines(text, con = con, useBytes = TRUE)
+  } else {
+    writeLines(text, con = path, useBytes = TRUE)
+  }
+  invisible(path)
+}
+
+
+#' Extract File Extension
+#'
+#' @description Extract the extension of a file.
+#'
+#' @param x 'character' vector.
+#'   File path(s).
+#' @param compression 'logical' flag.
+#'   Whether to account for the compression extension '.gz', '.bz2' or '.xz'.
+#'
+#' @return Returns the file (name) extensions (excluding the leading dot).
+#'
+#' @author J.C. Fisher, U.S. Geological Survey, Idaho Water Science Center
+#'
+#' @export
+#'
+#' @keywords internal
+#'
+#' @examples
+#' c("dir/file.txt", "file.txt.gz") |>
+#'   get_file_ext()
+
+get_file_ext <- function(x, compression = TRUE) {
+  checkmate::assert_character(x, any.missing = FALSE, min.len = 1)
+  checkmate::assert_flag(compression)
+  base_names <- basename(x)
+  patterns <- sprintf("^%s.",
+    tools::file_path_sans_ext(base_names, compression = compression)
+  )
+  vapply(seq_along(x),
+    FUN = function(i) {
+      sub(pattern = patterns[i], replacement = "", x = base_names[i])
     },
     FUN.VALUE = character(1)
   )

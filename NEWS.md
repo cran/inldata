@@ -1,3 +1,21 @@
+# inldata 1.2.1
+
+- Revise the examples in the help documentation for the `clean_sf`, `make_data_release`,
+  and `write_datasets` functions to reduce the execution time.
+
+# inldata 1.2.0
+
+- In the `dl` dataset, `sdate` field renamed to `min_dt`.
+- The `iwd` dataset has been geocorrected by shifting it to the east.
+- In the `percopnds` dataset, fields `status`, `min_dt`, and `max_dt` have been added,
+  along with more percolation ponds.
+- Substitute 7-zip system dependency with the 'archive' R-package, which necessitates 'libarchive-dev' on Linux.
+- In the `samples` dataset, replace the empty-character string (`""`) values
+  in the `remark_cd` and `rpt_lev_cd` fields with missing values (`NA`).
+- In `units`, `samples`, and `parameters` datasets, rename field form `parm_unit` to `unit_cd`.
+- In `backgroud`, `benchmarks`, and `dl` datasets,
+  substitute `srsname` and `parm_unit` fields with `parm_nm` field.
+
 # inldata 1.1.5
 
 - Revise datasets to incorporate data from the 2023 U.S. Census, which was previously based on the 2022 data.

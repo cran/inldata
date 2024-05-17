@@ -24,8 +24,10 @@
 #'   United States census year.
 #' @param buffer_dist 'numeric' number.
 #'   Buffer distance for the study area defined by the bounding of the sample [`sites`] dataset.
-#'   The buffer distance is measured in units of the coordinate reference system
-#'   ([`crs$units`][sf::st_crs]).
+#'   Specified in units of the coordinate reference system (`crs$units`).
+#' @param resolution 'numeric' number.
+#'   Spatial resolution of the raster grid, in meters.
+#'   Specify in units of the coordinate reference system (`crs$units`).
 #' @param warn 'integer' value.
 #'   Sets the handling of warning messages.
 #'   Choose value of less than 0 to show no warnings, 1 to print warnings (default),
@@ -39,7 +41,8 @@
 #'   See the [`save`] function for details on compression types.
 #' @param seed 'integer' count.
 #'   Random number generator state, used to create reproducible results.
-#'
+#' @param quiet 'logical' flag.
+#'   Whether to suppress printing of debugging information.
 #' @details This function retrieves and parses datasets from local and remote sources.
 #'   Access to the internet is required to download data from the following remote sources:
 #'   - National Elevation Dataset ([NED](https://www.usgs.gov/publications/national-elevation-dataset))
@@ -83,29 +86,37 @@ make_datasets <- function(path = getwd(),
                           tz = "America/Denver",
                           census_yr = 2023,
                           buffer_dist = 1000,
+                          resolution = 100,
                           warn = 1,
                           timeout = 10,
                           compress = "xz",
-                          seed = 0L) {
+                          seed = 0L,
+                          quiet = FALSE) {
 
   # track computation time
   dt <- Sys.time()
-  message("TIMESTAMP: ", format(dt, usetz = TRUE))
+  message("TIMESTAMP: ", format(dt, usetz = TRUE), "\n")
 
   # check arguments
-  path <- path.expand(path) |> normalizePath(winslash = "/", mustWork = FALSE)
+  path <- path.expand(path) |>
+    normalizePath(winslash = "/", mustWork = FALSE)
   checkmate::assert_directory_exists(path, access = "rw")
-  sprintf("%s/data-raw", path) |> checkmate::assert_directory_exists(access = "r")
-  destdir <- path.expand(destdir) |> normalizePath(winslash = "/", mustWork = FALSE)
+  destdir <- path.expand(destdir) |>
+    normalizePath(winslash = "/", mustWork = FALSE)
   checkmate::assert_flag(clean)
   checkmate::assert_choice(tz, choices = OlsonNames())
   checkmate::assert_int(census_yr, lower = 2000)
+  checkmate::assert_number(buffer_dist, lower = 0, finite = TRUE)
+  checkmate::assert_number(resolution, lower = 1, finite = TRUE)
   checkmate::assert_int(warn)
   checkmate::assert_number(timeout, lower = 1, finite = TRUE)
   if (!is.logical(compress)) {
-    checkmate::assert_choice(compress, choices = c("auto", "gzip", "bzip2", "xz"))
+    checkmate::assert_choice(compress,
+      choices = c("auto", "gzip", "bzip2", "xz")
+    )
   }
   checkmate::assert_count(seed, null.ok = TRUE)
+  checkmate::assert_flag(quiet)
 
   # check packages
   for (pkg in c("dataRetrieval", "stats", "stringi")) {
@@ -113,50 +124,78 @@ make_datasets <- function(path = getwd(),
   }
 
   # check system dependencies
-  Sys.which("7z") |> checkmate::assert_file_exists(access = "x")
   if (!capabilities("libcurl")) {
     stop("libcurl is unavailable", call. = FALSE)
   }
 
   # set global options
   op <- options(warn = warn, timeout = timeout * 60, useFancyQuotes = FALSE)
-  on.exit(options(op))
+  on.exit(expr = options(op))
+
+  # set terra-package options
+  local({
+    terra::terraOptions(progress = 0L, verbose = !quiet)
+  })
 
   # make temporary directory
   tmpdir <- tempfile("")
   dir.create(tmpdir, showWarnings = FALSE)
+  on.exit(
+    expr = unlink(tmpdir, recursive = TRUE),
+    add = TRUE
+  )
 
-  # set census url
-  census_url <- sprintf("ftp://ftp2.census.gov/geo/tiger/TIGER%s", census_yr)
+  # set U.S. Census URL
+  census_url <- paste0("https://www2.census.gov/geo/tiger/TIGER", census_yr)
+  assert_url(census_url)
 
-  # get cache directory
-  cachedir <- get_cache_dir()
+  # set National Hydrography Dataset (NHD) URL
+  nhd_url <- "https://dmap-data-commons-ow.s3.amazonaws.com"
+  assert_url(nhd_url)
+
+  # set The National Map (TNM) URL
+  tnm_url <- "https://prd-tnm.s3.amazonaws.com"
+  assert_url(tnm_url)
+
+  # test data-raw folder exists
+  paste0(path, "/data-raw") |>
+    checkmate::assert_directory_exists(access = "r")
 
   # make coordinate reference system dataset (crs)
   message("STATUS: making 'crs' dataset ...")
   file <- file.path(path, "data-raw/misc/projection.txt")
-  crs <- mds_crs(file)
+  checkmate::assert_file_exists(file, access = "r")
+  crs <- readLines(con = file, encoding = "UTF-8") |>
+    sf::st_crs()
   save(crs, file = file.path(tmpdir, "crs.rda"), compress = FALSE)
-
-  # make laboratory detection limits dataset (dl)
-  message("STATUS: making 'dl' dataset ...")
-  file <- file.path(path, "data-raw/misc/detection-limits.tsv")
-  dl <- mds_dl(file)
-  save(dl, file = file.path(tmpdir, "dl.rda"), compress = FALSE)
 
   # make parameter dataset (parameters)
   message("STATUS: making 'parameters' dataset ...")
   file <- file.path(path, "data-raw/qwdata/pcodes.txt")
-  parameters <- mds_parameters(file)
+  checkmate::assert_file_exists(file, access = "r")
+  pcodes <- utils::read.delim(file = file, header = FALSE, colClasses = "character")[[1]]
+  parameters <- mds_parameters(pcodes = pcodes)
+
+  # make laboratory detection limits dataset (dl)
+  message("STATUS: making 'dl' dataset ...")
+  file <- file.path(path, "data-raw/misc/detection-limits.tsv")
+  checkmate::assert_file_exists(file, access = "r")
+  data <- utils::read.delim(file, comment.char = "#", colClasses = "character")
+  dl <- mds_dl(data, parameters)
+  save(dl, file = file.path(tmpdir, "dl.rda"), compress = FALSE)
 
   # make water-quality samples dataset (samples)
   message("STATUS: making 'samples' dataset ...")
-  files <- file.path(path, c(
-    "data-raw/qwdata/output.rdb",
-    "data-raw/misc/translate-codes.tsv",
-    "data-raw/misc/counting-error.tsv"
-  ))
-  samples <- mds_samples(files, tz, dl, parameters, seed)
+  file <- file.path(path, "data-raw/qwdata/output.rdb")
+  checkmate::assert_file_exists(file, access = "r")
+  data <- read_rdb(file)
+  file <- file.path(path, "data-raw/misc/alpha-codes.tsv")
+  checkmate::assert_file_exists(file, access = "r")
+  alpha_codes <- utils::read.delim(file, colClasses = "character")
+  file <- file.path(path, "data-raw/misc/counting-error.tsv")
+  checkmate::assert_file_exists(file, access = "r")
+  cnt_error <- utils::read.delim(file, colClasses = "character")
+  samples <- mds_samples(data, alpha_codes, cnt_error, tz, dl, parameters, seed)
   save(samples, file = file.path(tmpdir, "samples.rda"), compress = FALSE)
 
   # continue making parameter dataset (parameters)
@@ -166,29 +205,43 @@ make_datasets <- function(path = getwd(),
 
   # make benchmark concentrations dataset (benchmarks)
   message("STATUS: making 'benchmarks' dataset ...")
-  files <- file.path(path, c(
-    "data-raw/misc/benchmarks.csv",
-    "data-raw/misc/benchmarks-extras.tsv"
-  ))
-  benchmarks <- mds_benchmarks(files, parameters)
+  file <- file.path(path, "data-raw/misc/benchmarks.csv")
+  checkmate::assert_file_exists(file, access = "r")
+  bm <- utils::read.csv(file,
+    na.strings = c("NA", ""),
+    strip.white = TRUE,
+    colClasses = "character",
+    check.names = FALSE
+  )
+  file <- file.path(path, "data-raw/misc/benchmarks-extras.tsv")
+  checkmate::assert_file_exists(file, access = "r")
+  mcl_extras <- utils::read.delim(file,
+    strip.white = TRUE,
+    colClasses = "character"
+  )
+  benchmarks <- mds_benchmarks(bm, mcl_extras, parameters)
   save(benchmarks, file = file.path(tmpdir, "benchmarks.rda"), compress = FALSE)
 
   # make site information dataset (sites)
   message("STATUS: making 'sites' dataset ...")
   file <- file.path(path, "data-raw/qwdata/siteids.txt")
-  sites <- mds_sites(file, crs)
+  checkmate::assert_file_exists(file, access = "r")
+  data <- utils::read.delim(file = file, header = FALSE, colClasses = "character")
+  colnames(data) <- c("agency_cd", "site_no", "station_nm", "network_cd", "pos")
+  sites <- mds_sites(data, crs)
 
   # set spatial extent
-  sp_extent <- sf::st_buffer(sites, dist = buffer_dist) |> sf::st_bbox()
+  extent <- sf::st_buffer(sites, dist = buffer_dist) |>
+    sf::st_bbox()
 
   # make surface-water measurements dataset (swm)
   message("STATUS: making 'swm' dataset ...")
-  swm <- mds_swm(tz, sites)
+  swm <- mds_swm(sites, tz)
   save(swm, file = file.path(tmpdir, "swm.rda"), compress = FALSE)
 
   # make groundwater levels dataset (gwl)
   message("STATUS: making 'gwl' dataset ...")
-  gwl <- mds_gwl(tz, sites)
+  gwl <- mds_gwl(sites, tz)
   save(gwl, file = file.path(tmpdir, "gwl.rda"), compress = FALSE)
 
   # continue making site information dataset (sites)
@@ -196,93 +249,146 @@ make_datasets <- function(path = getwd(),
   sites <- merge(sites, d, by = "site_no", sort = FALSE)
   save(sites, file = file.path(tmpdir, "sites.rda"), compress = FALSE)
 
-  # make parameter units dataset (units)
+  # make units of measurment dataset (units)
   message("STATUS: making 'units' dataset ...")
   file <- file.path(path, "data-raw/misc/units.tsv")
-  units <- mds_units(file)
+  checkmate::assert_file_exists(file, access = "r")
+  data <- utils::read.delim(file,
+    comment.char = "#",
+    na.strings = "",
+    colClasses = "character"
+  )
+  units <- mds_units(data)
   save(units, file = file.path(tmpdir, "units.rda"), compress = FALSE)
 
   # make background concentrations dataset (background)
   message("STATUS: making 'background' dataset ...")
   file <- file.path(path, "data-raw/misc/background.tsv")
-  background <- mds_background(file)
+  checkmate::assert_file_exists(file, access = "r")
+  data <- utils::read.delim(file,
+    strip.white = TRUE,
+    colClasses = "character"
+  )
+  background <- mds_background(data, parameters)
   save(background, file = file.path(tmpdir, "background.rda"), compress = FALSE)
 
   # make eastern Snake River Plain boundary dataset (esrp)
   message("STATUS: making 'esrp' dataset ...")
   file <- file.path(path, "data-raw/misc/esrp.geojson")
-  esrp <- mds_esrp(file, crs)
+  checkmate::assert_file_exists(file, access = "r")
+  data <- sf::st_read(dsn = file, quiet = quiet)
+  esrp <- clean_sf(data, cols = "geometry", crs = crs)
   save(esrp, file = file.path(tmpdir, "esrp.rda"), compress = FALSE)
 
   # make Idaho National Laboratory boundary dataset (inl)
   message("STATUS: making 'inl' dataset ...")
   file <- file.path(path, "data-raw/misc/inl.geojson")
-  inl <- mds_inl(file, crs)
+  checkmate::assert_file_exists(file, access = "r")
+  data <- sf::st_read(dsn = file, quiet = quiet)
+  inl <- clean_sf(data, cols = "geometry", crs = crs)
   save(inl, file = file.path(tmpdir, "inl.rda"), compress = FALSE)
 
   # make industrial waste ditch dataset (iwd)
   message("STATUS: making 'iwd' dataset ...")
   file <- file.path(path, "data-raw/misc/nrfiwd.geojson")
-  iwd <- mds_iwd(file, crs)
+  checkmate::assert_file_exists(file, access = "r")
+  data <- sf::st_read(dsn = file, quiet = quiet)
+  iwd <- clean_sf(data, cols = "geometry", crs = crs)
   save(iwd, file = file.path(tmpdir, "iwd.rda"), compress = FALSE)
 
   # make Idaho National Laboratory facilities dataset (facilities)
   message("STATUS: making 'facilities' dataset ...")
   file <- file.path(path, "data-raw/misc/facilities.geojson")
-  facilities <- mds_facilities(file, crs)
+  checkmate::assert_file_exists(file, access = "r")
+  data <- sf::st_read(dsn = file, quiet = quiet)
+  facilities <- mds_facilities(data, crs = crs)
   save(facilities, file = file.path(tmpdir, "facilities.rda"), compress = FALSE)
 
   # make percolation ponds dataset (percponds)
   message("STATUS: making 'percponds' dataset ...")
   file <- file.path(path, "data-raw/misc/percponds.geojson")
-  percponds <- mds_percponds(file, crs)
+  checkmate::assert_file_exists(file, access = "r")
+  data <- sf::st_read(dsn = file, quiet = quiet)
+  percponds <- mds_percponds(data, crs = crs)
   save(percponds, file = file.path(tmpdir, "percponds.rda"), compress = FALSE)
 
   # make state of Idaho boundary dataset (idaho)
   message("STATUS: making 'idaho' dataset ...")
   url <- sprintf("%s/STATE/tl_%s_us_state.zip", census_url, census_yr)
-  idaho <- mds_idaho(url, cachedir, crs)
+  files <- download_file(url, quiet = quiet) |> extract_archive()
+  file <- grep(".shp$", files, value = TRUE)
+  data <- sf::st_read(dsn = file, quiet = quiet)
+  idaho <- mds_idaho(data, crs)
   save(idaho, file = file.path(tmpdir, "idaho.rda"), compress = FALSE)
 
   # make cities and towns dataset (cities)
   message("STATUS: making 'cities' dataset ...")
   url <- sprintf("%s/PLACE/tl_%s_16_place.zip", census_url, census_yr)
-  cities <- mds_cities(url, cachedir, crs, sp_extent)
+  files <- download_file(url, quiet = quiet) |> extract_archive()
+  file <- grep(".shp$", files, value = TRUE)
+  data <- sf::st_read(dsn = file, quiet = quiet)
+  cities <- mds_cities(data, crs, extent)
   save(cities, file = file.path(tmpdir, "cities.rda"), compress = FALSE)
 
   # make county boundaries dataset (counties)
   message("STATUS: making 'counties' dataset ...")
   url <- sprintf("%s/COUNTY/tl_%s_us_county.zip", census_url, census_yr)
-  counties <- mds_counties(url, cachedir, crs, sp_extent)
+  files <- download_file(url, quiet = quiet) |> extract_archive()
+  file <- grep(".shp$", files, value = TRUE)
+  data <- sf::st_read(dsn = file, quiet = quiet)
+  counties <- mds_counties(data, crs, extent)
   save(counties, file = file.path(tmpdir, "counties.rda"), compress = FALSE)
 
   # make road netowrk dataset (roads)
   message("STATUS: making 'roads' dataset ...")
-  prisec_url <- sprintf("%s/PRISECROADS/tl_%s_16_prisecroads.zip", census_url, census_yr)
-  all_urls <- sprintf("%s/ROADS/tl_%s_%s_roads.zip", census_url, census_yr, counties$id)
-  roads <- mds_roads(prisec_url, all_urls, cachedir, crs, sp_extent)
+  urls <- sprintf("%s/ROADS/tl_%s_%s_roads.zip", census_url, census_yr, counties$id)
+  all_data <- do.call(rbind,
+    lapply(urls, function(url) {
+      files <- download_file(url, quiet = quiet) |> extract_archive()
+      file <- grep(".shp$", files, value = TRUE)
+      sf::st_read(dsn = file, quiet = quiet)
+    })
+  )
+  url <- sprintf("%s/PRISECROADS/tl_%s_16_prisecroads.zip", census_url, census_yr)
+  files <- download_file(url, quiet = quiet) |> extract_archive()
+  file <- grep(".shp$", files, value = TRUE)
+  prisec_data <- sf::st_read(dsn = file, quiet = quiet)
+  roads <- mds_roads(all_data, prisec_data, crs, extent)
   save(roads, file = file.path(tmpdir, "roads.rda"), compress = FALSE)
 
   # make lakes and ponds dataset (lakes)
   message("STATUS: making 'lakes' dataset ...")
-  url <- "https://dmap-data-commons-ow.s3.amazonaws.com/NHDPlusV21/Data/NHDPlusPN/NHDPlusV21_PN_17_NHDSnapshot_08.7z"
-  lakes <- mds_lakes(url, cachedir, crs, sp_extent)
+  url <- paste0(nhd_url, "/NHDPlusV21/Data/NHDPlusPN/NHDPlusV21_PN_17_NHDSnapshot_08.7z")
+  files <- download_file(url, quiet = quiet) |> extract_archive()
+  file <- grep("NHDWaterbody.shp$", files, value = TRUE)
+  data <- sf::st_read(dsn = file, quiet = quiet)
+  lakes <- mds_lakes(data, crs, extent)
   save(lakes, file = file.path(tmpdir, "lakes.rda"), compress = FALSE)
 
   # make rivers and streams dataset (streams)
   message("STATUS: making 'streams' dataset ...")
-  url <- "https://dmap-data-commons-ow.s3.amazonaws.com/NHDPlusV21/Data/NHDPlusPN/NHDPlusV21_PN_17_NHDSnapshot_08.7z"
-  streams <- mds_streams(url, cachedir, crs, sp_extent)
+  url <- paste0(nhd_url, "/NHDPlusV21/Data/NHDPlusPN/NHDPlusV21_PN_17_NHDSnapshot_08.7z")
+  files <- download_file(url, quiet = quiet) |> extract_archive()
+  file <- grep("NHDFlowline.shp$", files, value = TRUE)
+  data <- sf::st_read(dsn = file, quiet = quiet)
+  streams <- mds_streams(data, crs, extent)
   save(streams, file = file.path(tmpdir, "streams.rda"), compress = FALSE)
 
   # make digital elevation model dataset (dem)
   message("STATUS: making 'dem' dataset ...")
   ids <- c("n44w113", "n44w114", "n45w113", "n45w114")
-  urls <- sprintf(
-    fmt = "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/13/TIFF/current/%s/USGS_13_%s.tif",
-    ids, ids
+  urls <- sprintf("%s/StagedProducts/Elevation/13/TIFF/current/%s/USGS_13_%s.tif",
+    tnm_url, ids, ids
   )
-  dem <- mds_dem(urls, cachedir, crs, sp_extent)
+  data <- do.call(terra::merge,
+    lapply(urls,
+      FUN = function(url) {
+        file <- download_file(url, quiet = quiet)
+        terra::rast(file)
+      }
+    )
+  )
+  dem <- mds_dem(data, crs, extent, resolution)
   save(dem, file = file.path(tmpdir, "dem.rda"), compress = FALSE)
 
   # compress temporary files
@@ -299,71 +405,32 @@ make_datasets <- function(path = getwd(),
   }
   files <- list.files(path = tmpdir, full.names = TRUE)
   file.copy(from = files, to = destdir, overwrite = TRUE)
-  unlink(tmpdir, recursive = TRUE)
 
   # get paths to files in destination directory
   paths <- file.path(destdir, basename(files), fsep = "/")
 
   # print computation time
-  message("DURATION: ", format(Sys.time() - dt, usetz = TRUE))
+  message("\n", "DURATION: ", format(Sys.time() - dt, usetz = TRUE))
 
   invisible(paths)
 }
 
 
-# Coordinate Reference System (crs) ----
-
-mds_crs <- function(file) {
-  checkmate::assert_file_exists(file, access = "r")
-  x <- readLines(con = file, encoding = "UTF-8")
-  sf::st_crs(x)
-}
-
-
-# Laboratory Detection Limits (dl) -----
-
-mds_dl <- function(file) {
-
-  # check arguments
-  checkmate::assert_file_exists(file, access = "r")
-
-  # read file
-  d <- utils::read.delim(file, comment.char = "#", colClasses = "character")
-
-  # convert column class
-  d$parm_unit <- as.factor(d$parm_unit)
-  d$lab_det_lim_va <- as.numeric(d$lab_det_lim_va)
-  d$sdate <- as.Date(d$sdate)
-  d$reference <- as.factor(d$reference)
-
-  # order and remove row names
-  idxs <- tolower(d$srsname) |> stringi::stri_order(numeric = TRUE)
-  d <- d[idxs, ]
-  rownames(d) <- NULL
-
-  d
-}
-
-
 # Parameter Information for Analytes (parameters) -----
 
-mds_parameters <- function(file) {
+mds_parameters <- function(pcodes) {
 
   # check arguments
-  checkmate::assert_file_exists(file, access = "r")
-
-  # read metadata file
-  meta <- utils::read.delim(file = file, header = FALSE, colClasses = "character")
-  colnames(meta) <- c("pcode", "parm_nm")
+  checkmate::assert_character(pcodes, any.missing = FALSE, min.len = 1)
 
   # check for duplicated values
-  if (any(is <- duplicated(meta$pcode))) {
-    txt <- sQuote(meta$pcode[is]) |> paste(collapse = ", ")
+  if (any(is <- duplicated(pcodes))) {
+    txt <- pcodes[is] |> sQuote() |> paste(collapse = ", ")
     stop("Duplicated parameter codes: ", txt, call. = FALSE)
   }
 
   # download data
-  d <- dataRetrieval::readNWISpCode(meta$pcode)
+  d <- dataRetrieval::readNWISpCode(pcodes)
 
   cols <- c(
     "parm_nm" = "parameter_nm",
@@ -371,7 +438,7 @@ mds_parameters <- function(file) {
     "parm_group_nm" = "parameter_group_nm",
     "casrn" = "casrn",
     "srsname" = "srsname",
-    "parm_unit" = "parameter_units"
+    "unit_cd" = "parameter_units"
   )
   d <- d[, cols]
   colnames(d) <- names(cols)
@@ -383,7 +450,7 @@ mds_parameters <- function(file) {
   d$srsname[d$srsname == "Trihalomethanes (four), total, from SDWA NPDWR"] <- "TTHM4"
   d$srsname[d$srsname == ""] <- NA_character_
 
-  d$parm_unit <- trimws(d$parm_unit)
+  d$unit_cd <- trimws(d$unit_cd)
   subs <- c(
     "mg/L" = "^mg/l$",
     "mg/L as CaCO3" = "^mg/l CaCO3$",
@@ -392,13 +459,17 @@ mds_parameters <- function(file) {
     "ug/L " = "^ug/l "
   )
   for (i in seq_along(subs)) {
-    d$parm_unit <- sub(pattern = subs[i], replacement = names(subs)[i], x = d$parm_unit)
+    d$unit_cd <- sub(
+      pattern = subs[i],
+      replacement = names(subs)[i],
+      x = d$unit_cd
+    )
   }
-  d$parm_unit[d$parm_unit == ""] <- NA_character_
+  d$unit_cd[d$unit_cd == ""] <- NA_character_
 
   # convert classes
   d$parm_group_nm <- as.factor(d$parm_group_nm)
-  d$parm_unit <- as.factor(d$parm_unit)
+  d$unit_cd <- as.factor(d$unit_cd)
 
   idxs <- tolower(d$parm_nm) |> stringi::stri_order(numeric = TRUE)
   d <- d[idxs, ]
@@ -408,47 +479,70 @@ mds_parameters <- function(file) {
 }
 
 
-# Water-Quality Data Records (samples) -----
+# Laboratory Detection Limits (dl) -----
 
-mds_samples <- function(files, tz, dl, parameters, seed) {
+mds_dl <- function(data, parameters) {
 
   # check arguments
-  checkmate::assert_character(files, len = 3, any.missing = FALSE)
-  for (file in files) checkmate::assert_file_exists(file, access = "r")
+  checkmate::assert_data_frame(data, types = "character", min.rows = 1, col.names = "named")
+  checkmate::assert_data_frame(parameters, min.rows = 1, col.names = "named")
+
+  # merge in parameter name
+  d <- merge(x = data, y = parameters[, c("pcode", "parm_nm")], by = "pcode")
+
+  # convert column class
+  d$unit_cd <- as.factor(d$unit_cd)
+  d$lab_det_lim_va <- as.numeric(d$lab_det_lim_va)
+  d$min_dt <- as.Date(d$min_dt)
+  d$reference <- as.factor(d$reference)
+
+  # unit conversion
+  conversion <- convert_units(d, parameters)
+  d$lab_det_lim_va <- d$lab_det_lim_va * conversion$mult
+
+  # order and remove row names
+  cols <- c("parm_nm", "pcode", "lab_det_lim_va", "min_dt", "reference")
+  idxs <- tolower(d$srsname) |>
+    stringi::stri_order(numeric = TRUE)
+  d <- d[idxs, cols]
+  rownames(d) <- NULL
+
+  d
+}
+
+
+# Water-Quality Data Records (samples) -----
+
+mds_samples <- function(d, alpha_codes, cnt_error, tz, dl, parameters, seed) {
+
+  # check arguments
+  checkmate::assert_data_frame(d,
+    types = "character",
+    min.rows = 1,
+    col.names = "named"
+  )
+  checkmate::assert_data_frame(alpha_codes,
+    types = "character",
+    min.rows = 1,
+    col.names = "named"
+  )
+  checkmate::assert_data_frame(cnt_error,
+    types = "character",
+    min.rows = 1,
+    col.names = "named"
+  )
   checkmate::assert_string(tz)
   checkmate::assert_data_frame(dl, min.rows = 1, col.names = "named")
   checkmate::assert_data_frame(parameters, min.rows = 1, col.names = "named")
   checkmate::assert_count(seed, null.ok = TRUE)
 
-  # read sample records file
-  v <- readLines(files[1])
-  i <- 0L
-  repeat {
-    ss <- v[i + 1L] |> substr(start = 1, stop = 1)
-    if (ss != "#") break
-    i <- i + 1L
-  }
-  d <- utils::read.table(
-    file = files[1],
-    sep = "\t",
-    quote = "",
-    na.strings = "NA",
-    skip = i + 2L,
-    strip.white = TRUE,
-    colClasses = "character"
-  )
-  hdr <- v[i + 1L] |> strsplit(split = "\t") |> unlist()
-  colnames(d) <- hdr
-  remark <- v[seq_len(i)]
-
-  # read translate codes file
-  codes <- utils::read.delim(file = files[2], colClasses = "character")
-  dic <- codes$nwis_cd
-  names(dic) <- codes$alpha_cd
-  colnames(d) <- dic[hdr]
-  idxs <- which(dic[hdr] == "")
+  # translate alpha codes
+  dic <- alpha_codes$nwis_cd
+  names(dic) <- alpha_codes$alpha_cd
+  colnames(d) <- dic[colnames(d)]
+  idxs <- which(dic[colnames(d)] == "")
   if (length(idxs) > 0) {
-    txt <- hdr[idxs] |> sQuote() |> paste(collapse = ", ")
+    txt <- colnames(d)[idxs] |> sQuote() |> paste(collapse = ", ")
     warning("Missing database names for ALPHA codes:\n  ", txt, call. = FALSE, immediate. = TRUE)
     d <- d[, -idxs]
   }
@@ -456,23 +550,25 @@ mds_samples <- function(files, tz, dl, parameters, seed) {
   # set result units
   idxs <- match(d$pcode, parameters$pcode)
   if (any(is <- is.na(idxs))) {
-    txt <- sQuote(d$pcode[idxs][is]) |> paste(collapse = ", ")
+    txt <- d$pcode[idxs][is] |> sQuote() |> paste(collapse = ", ")
     stop("Samples contains unrecognized parameter codes: ", txt, call. = FALSE)
   }
-  d$parm_unit <- parameters$parm_unit[idxs]
+  d$unit_cd <- parameters$unit_cd[idxs]
 
   # set site name
   site_nm <- parse_station_nm(d$station_nm)
   d <- data.frame(site_nm, d)
 
   # account for missing time
-  d$sample_tm[d$sample_tm == ""] <- "1200"
+  is <- d$sample_tm %in% c("", NA)
+  d$sample_tm[is] <- "1200"
   d$sample_dt <- paste(d$sample_dt, d$sample_tm) |>
     as.POSIXct(tz = tz, format = "%Y%m%d %H%M")
   d$sample_tm <- NULL
 
   # get the number of digits to the right of the decimal point in a number
-  d$result_scale_va <- sub("\\d+\\.?(.*)$", "\\1", d$result_va) |> nchar()
+  d$result_scale_va <- sub("\\d+\\.?(.*)$", "\\1", d$result_va) |>
+    nchar()
 
   d$result_va <- as.numeric(d$result_va)
   d$anl_stat_cd <- NULL
@@ -483,25 +579,27 @@ mds_samples <- function(files, tz, dl, parameters, seed) {
 
   # remove unnecessary columns
   cols <- c("station_nm", "parm_nm")
-  idxs <- match(cols, colnames(d)) |> stats::na.omit()
+  idxs <- match(cols, colnames(d)) |>
+    stats::na.omit()
   if (length(idxs) > 0) {
     d <- d[, -idxs]
   }
 
   # remove records that are duplicated in the NWIS and QWDATA databases
   idxs <- which(colnames(d) %in% c("db_no", "dqi_cd"))
-  is <- d[, -idxs] |> duplicated()
+  is <- duplicated(d[, -idxs])
   d <- d[!is, ]
 
   # remove contaminated results
-  d <- d[d$remark_cd != "V", ]
+  is <- d$remark_cd %in% "V"
+  d <- d[!is, ]
 
   # initialize remark
   d$remark <- nrow(d) |> character()
 
   # report zero and negative results as nondetects
-  is <- d$remark_cd == "<" & !is.na(d$result_va) & d$result_va <= 0
-  d$remark_cd[is] <- character(1)
+  is <- d$remark_cd %in% "<" & !is.na(d$result_va) & d$result_va <= 0
+  d$remark_cd[is] <- NA_character_
   txt <- "Change remark code from '<' (nondetect) to '' because result value is less than or equal to 0"
   d$remark[is] <- paste_strings(d$remark[is], txt, collapse = "; ", recycle0 = TRUE)
 
@@ -510,7 +608,7 @@ mds_samples <- function(files, tz, dl, parameters, seed) {
   radchem_pcode <- parameters$pcode[is]
 
   # report radiochemical nondetects as less than the reporting level
-  is <- d$remark_cd == "R" & d$pcode %in% radchem_pcode
+  is <- d$remark_cd %in% "R" & d$pcode %in% radchem_pcode
   d$result_va[is] <- d$rpt_lev_va[is]
   d$remark_cd[is] <- "<"
   txt <- "Substitute result value with reporting level value and change remark code from 'R' to '<'"
@@ -530,7 +628,7 @@ mds_samples <- function(files, tz, dl, parameters, seed) {
     checkmate::assert_subset(choices = choices, empty.ok = FALSE)
 
   # assume unrecorded sample types are regular environmental samples
-  is <- d$sample_type_cd == "A"
+  is <- d$sample_type_cd %in% "A"
   d$sample_type_cd[is] <- "9"
   txt <- "Change sample type code from 'A' (not recorded) to '9' (regular sample)"
   d$remark[is] <- paste_strings(d$remark[is], txt, collapse = "; ", recycle0 = TRUE)
@@ -542,14 +640,11 @@ mds_samples <- function(files, tz, dl, parameters, seed) {
     format(d$sample_dt, format = "%Y%m%d%H%M", tz = "GMT")
   )
 
-  # read counting error file
-  counting_error <- utils::read.delim(file = files[3], colClasses = "character")
-
   # convert counting error to standard deviaiton
   is_lt_1989 <- d$sample_dt < as.POSIXct("2008-01-01")
-  for (i in seq_len(nrow(counting_error))) {
-    cd <- counting_error$pcode[i]
-    ce <- counting_error$pcode_ce[i]
+  for (i in seq_len(nrow(cnt_error))) {
+    cd <- cnt_error$pcode[i]
+    ce <- cnt_error$pcode_ce[i]
 
     is_cd <- d$pcode == cd & is.na(d$lab_sd_va)
     is_ce <- d$pcode == ce
@@ -575,8 +670,8 @@ mds_samples <- function(files, tz, dl, parameters, seed) {
   d$id <- seq_len(nrow(d))
 
   # subset replicate samples
-  env_samp <- d[d$sample_type_cd == "9", ]
-  rep_samp <- d[d$sample_type_cd == "7", ]
+  env_samp <- d[d$sample_type_cd %in% "9", ]
+  rep_samp <- d[d$sample_type_cd %in% "7", ]
 
   # convert to day
   env_day <- as.Date(env_samp$sample_dt) |> as.integer()
@@ -619,9 +714,12 @@ mds_samples <- function(files, tz, dl, parameters, seed) {
   is <- orphans$pcode %in% ignore_pcode
   orphans <- orphans[!is, ]
   if (nrow(orphans) > 0) {
-    txt <- sprintf("  %s %s (%s)", orphans$sample_dt, orphans$site_no, orphans$site_nm) |>
-      unique() |> sort()
-    sprintf("Unable to pair %d replicate samples:", length(txt)) |>
+    txt <- sprintf("  %s '%s' %s %s",
+      orphans$site_no, orphans$site_nm, orphans$pcode, orphans$sample_dt
+    ) |>
+      unique() |>
+      sort()
+    sprintf("Unable to pair %d replicate records:", length(txt)) |>
       warning(call. = FALSE, immediate. = TRUE)
     paste(txt, collapse = "\n") |> message()
   }
@@ -637,7 +735,7 @@ mds_samples <- function(files, tz, dl, parameters, seed) {
   # set laboratory detection limits
   d$lab_det_lim_va <- NA_real_
   for (i in seq_len(nrow(dl))) {
-    is <- d$pcode == dl$pcode[i] & as.Date(d$sample_dt) >= dl$sdate[i]
+    is <- d$pcode == dl$pcode[i] & as.Date(d$sample_dt) >= dl$min_dt[i]
     d$lab_det_lim_va[is] <- dl$lab_det_lim_va[i]
   }
 
@@ -658,13 +756,13 @@ mds_samples <- function(files, tz, dl, parameters, seed) {
   is <- is.finite(ui) & ui < 0
   li[is] <- 0
   ui[is] <- 0
-  li <- round_usgs(li, digits = d$result_scale_va)
-  ui <- round_usgs(ui, digits = d$result_scale_va)
+  li <- round_numbers(li, digits = d$result_scale_va)
+  ui <- round_numbers(ui, digits = d$result_scale_va)
   d$lab_li_va <- li
   d$lab_ui_va <- ui
 
   # represent nondetect result value using confidence interval
-  is <- d$remark_cd == "<"
+  is <- d$remark_cd %in% "<"
   d$lab_li_va[is] <- 0
   d$lab_ui_va[is] <- d$result_va[is]
 
@@ -679,7 +777,7 @@ mds_samples <- function(files, tz, dl, parameters, seed) {
     "dqi_cd",
     "rpt_lev_cd",
     "sample_type_cd",
-    "parm_unit"
+    "unit_cd"
   )
   for (col in cols) {
     d[[col]] <- as.factor(d[[col]])
@@ -695,7 +793,7 @@ mds_samples <- function(files, tz, dl, parameters, seed) {
     "site_nm",
     "sample_dt",
     "parm_short_nm",
-    "parm_unit",
+    "unit_cd",
     "remark_cd",
     "result_va",
     "lab_sd_va",
@@ -726,22 +824,25 @@ mds_samples <- function(files, tz, dl, parameters, seed) {
 
 # Benchmark Concentrations (benchmarks) -----
 
-mds_benchmarks <- function(files, parameters) {
+mds_benchmarks <- function(bm, mcl_extras, parameters) {
 
   # check arguments
-  checkmate::assert_character(files, len = 2, any.missing = FALSE)
-  for (file in files) checkmate::assert_file_exists(file, access = "r")
-  checkmate::assert_data_frame(parameters, min.rows = 1, col.names = "named")
-
-  # read benchmarks file
-  d <- utils::read.csv(
-    file = files[1],
-    na.strings = c("NA", ""),
-    strip.white = TRUE,
-    colClasses = "character",
-    check.names = FALSE
+  checkmate::assert_data_frame(bm,
+    types = "character",
+    min.rows = 1,
+    col.names = "named"
+  )
+  checkmate::assert_data_frame(mcl_extras,
+    types = "character",
+    min.rows = 1,
+    col.names = "named"
+  )
+  checkmate::assert_data_frame(parameters,
+    min.rows = 1,
+    col.names = "named"
   )
 
+  # set column names
   cols <- c(
     "srsname" = "Chemical Name",
     "casrn" = "CAS Registry Number",
@@ -754,7 +855,7 @@ mds_benchmarks <- function(files, parameters) {
     "hbsl_cancer" = "Cancer HBSL (micrograms/L)",
     "remark" = "Benchmark Remarks"
   )
-  d <- d[, cols]
+  d <- bm[, cols]
   colnames(d) <- names(cols)
 
   d$srsname <- NULL
@@ -762,16 +863,43 @@ mds_benchmarks <- function(files, parameters) {
   d$hhbp_noncancer <- as.numeric(d$hhbp_noncancer)
   d$hbsl_noncancer <- as.numeric(d$hbsl_noncancer)
   FUN <- function(x, idx) {
-    vapply(strsplit(x, split = "-"), function(y) as.numeric(y[idx]), numeric(1))
+    vapply(strsplit(x, split = "-"),
+      FUN = function(y) {
+        as.numeric(y[idx])
+      },
+      FUN.VALUE = numeric(1)
+    )
   }
   d$hhbp_cancer_min <- FUN(d$hhbp_cancer, 1)
   d$hhbp_cancer_max <- FUN(d$hhbp_cancer, 2)
   d$hbsl_cancer_min <- FUN(d$hbsl_cancer, 1)
   d$hbsl_cancer_max <- FUN(d$hbsl_cancer, 2)
 
-  is <- grepl("^mg/L", parameters$parm_unit)
-  is <- d$casrn %in% parameters$casrn[is]
-  bm <- c(
+  is <- grepl("^mrem/yr", d$remark)
+  d$mcl[is] <- 50 # screening level
+
+  l <- strsplit(d$pcode, split = ", ")
+  idxs <- lapply(seq_along(l),
+    FUN = function(i) {
+      rep(i, length(l[[i]]))
+    }
+  ) |>
+    unlist()
+  d <- d[idxs, ]
+  d$pcode <- unlist(l)
+
+  d$unit_cd <- "ug/L"
+
+  p <- parameters[, c("pcode", "parm_nm")]
+  d <- merge(p, d, by = "pcode", all.x = TRUE, sort = FALSE)
+
+  mcl_extras$mcl <- as.numeric(mcl_extras$mcl)
+  idxs <- match(mcl_extras$pcode, d$pcode)
+  d[idxs, colnames(mcl_extras)] <- mcl_extras[]
+  d$mcl[idxs] <- mcl_extras$mcl |> as.numeric()
+  d$unit_cd[idxs] <- mcl_extras$unit_cd
+
+  cols <- c(
     "mcl",
     "hhbp_noncancer",
     "hhbp_cancer_min",
@@ -780,56 +908,15 @@ mds_benchmarks <- function(files, parameters) {
     "hbsl_cancer_min",
     "hbsl_cancer_max"
   )
-  d[is, bm] <- d[is, bm] * 0.001
-
-  is <- grepl("^mrem/yr", d$remark)
-  d$mcl[is] <- 50 # screening level
-
-  l <- strsplit(d$pcode, split = ", ")
-  idxs <- lapply(seq_along(l), function(i) {
-    rep(i, length(l[[i]]))
-  }) |> unlist()
-  d <- d[idxs, ]
-  d$pcode <- unlist(l)
-
-  d$parm_unit <- "ug/L"
-
-  p <- parameters[, c("pcode", "srsname")]
-  d <- merge(p, d, by = "pcode", all.x = TRUE, sort = FALSE)
-
-  # read maximum contaminant level extras file
-  mcl_extras <- utils::read.delim(
-    file = files[2],
-    strip.white = TRUE,
-    colClasses = "character"
-  )
-  mcl_extras$mcl <- as.numeric(mcl_extras$mcl)
-
-  idxs <- match(mcl_extras$pcode, d$pcode)
-  d[idxs, colnames(mcl_extras)] <- mcl_extras[]
-
-  d$mcl[idxs] <- mcl_extras$mcl |> as.numeric()
-  d$parm_unit[idxs] <- mcl_extras$parm_unit
-
-  is <- apply(is.na(d[, bm]), 1, all)
+  is <- is.na(d[, cols]) |>
+    apply(MARGIN = 1, FUN = all)
   d <- d[!is, ]
+  conversion <- convert_units(d, parameters)
+  d[, cols] <- d[, cols] * conversion$mult
 
-  d$parm_unit <- as.factor(d$parm_unit)
-
-  idxs <- tolower(d$srsname) |> stringi::stri_order(numeric = TRUE)
-  cols <- c(
-    "srsname",
-    "pcode",
-    "parm_unit",
-    "mcl",
-    "hhbp_noncancer",
-    "hhbp_cancer_min",
-    "hhbp_cancer_max",
-    "hbsl_noncancer",
-    "hbsl_cancer_min",
-    "hbsl_cancer_max",
-    "remark"
-  )
+  idxs <- tolower(d$parm_nm) |>
+    stringi::stri_order(numeric = TRUE)
+  cols <- c("parm_nm", "pcode", cols, "remark")
   d <- d[idxs, cols]
   rownames(d) <- NULL
 
@@ -839,31 +926,30 @@ mds_benchmarks <- function(files, parameters) {
 
 # Site Information (sites) -----
 
-mds_sites <- function(file, crs) {
+mds_sites <- function(data, crs) {
 
   # check arguments
-  checkmate::assert_string(file)
-  checkmate::assert_file_exists(file, access = "r")
+  checkmate::assert_data_frame(data,
+    types = "character",
+    min.rows = 1,
+    col.names = "named"
+  )
   checkmate::assert_class(crs, "crs")
 
-  # read metadata file
-  meta <- utils::read.delim(file = file, header = FALSE, colClasses = "character")
-  colnames(meta) <- c("agency_cd", "site_no", "station_nm", "network_cd", "pos")
-
   # check for duplicated values
-  if (any(is <- duplicated(meta$site_no))) {
-    txt <- sQuote(meta$site_no[is]) |> paste(collapse = ", ")
+  if (any(is <- duplicated(data$site_no))) {
+    txt <- sQuote(data$site_no[is]) |> paste(collapse = ", ")
     stop("Duplicated site numbers: ", txt, call. = FALSE)
   }
 
   # download data from NWIS
-  d <- dataRetrieval::readNWISsite(siteNumbers = unique(meta$site_no))
+  d <- dataRetrieval::readNWISsite(siteNumbers = unique(data$site_no))
 
   # change class
-  meta$pos <- as.integer(meta$pos)
+  data$pos <- as.integer(data$pos)
 
   # merge in metadata
-  d <- merge(d, meta[, c("site_no", "network_cd", "pos")], by = "site_no")
+  d <- merge(d, data[, c("site_no", "network_cd", "pos")], by = "site_no")
 
   # check altitude datum
   is <- !(d$alt_datum_cd %in% "NAVD88")
@@ -873,7 +959,9 @@ mds_sites <- function(file, crs) {
       call. = FALSE,
       immediate. = TRUE
     )
-    sprintf("  %s (%s) datum '%s'", d$site_no[is], d$station_nm[is], d$alt_datum_cd[is]) |>
+    sprintf("  %s '%s' datum '%s'",
+      d$site_no[is], d$station_nm[is], d$alt_datum_cd[is]
+    ) |>
       paste(collapse = "\n") |> message()
     d$alt_datum_cd[is] <- "NAVD88"
   }
@@ -902,7 +990,9 @@ mds_sites <- function(file, crs) {
     "R" = 3,
     "F" = 5
   )
-  checkmate::assert_subset(d$coord_acy_cd, choices = names(coord_accuracies))
+  checkmate::assert_subset(d$coord_acy_cd,
+    choices = names(coord_accuracies)
+  )
   d$coord_acy_va <- coord_accuracies[d$coord_acy_cd]
 
   cols <- c(
@@ -969,37 +1059,44 @@ mds_sites <- function(file, crs) {
 
 # Surface-Water Measurements (swm) -----
 
-mds_swm <- function(tz, sites) {
+mds_swm <- function(sites, tz) {
 
   # check arguments
-  checkmate::assert_string(tz)
   checkmate::assert_class(sites, classes = "sf")
+  checkmate::assert_string(tz)
 
   # download data from NWIS
   d <- dataRetrieval::readNWISmeas(
     siteNumbers = sites$site_no,
-    convertType = TRUE,
-    tz = tz
+    tz = tz,
+    convertType = TRUE
   )
+
+  # set measurement date-time value
+  d$stage_dt <- d$measurement_dateTime
+  if (anyNA(d$stage_dt)) {
+    stop("Missing timestamp", call. = FALSE)
+  }
 
   # add local site names
   idxs <- match(d$site_no, sites$site_no)
   d$site_nm <- sites$site_nm[idxs]
 
-  # set measurement timestamp
-  if (anyNA(d$measurement_dateTime)) {
-    stop("Missing timestamp", call. = FALSE)
-  }
-  d$stage_dt <- d$measurement_dateTime
-
   # remove duplicated timestamp records
   is <- duplicated(d[, c("site_no", "stage_dt")])
   if (any(is)) {
     warning("Removed duplicated timestamp records:", call. = FALSE, immediate. = TRUE)
-    sprintf("  %s (%s) at %s", d$site_no[is], d$site_nm[is], d$stage_dt[is]) |>
-      paste(collapse = "\n") |> message()
+    sprintf("  %s '%s' %s",
+      d$site_no[is], d$site_nm[is], d$stage_dt[is]
+    ) |>
+      paste(collapse = "\n") |>
+      message()
     d <- d[!is, ]
   }
+
+  # add local site names
+  idxs <- match(d$site_no, sites$site_no)
+  d$site_nm <- sites$site_nm[idxs]
 
   # set measurement values
   d$stage_va <- as.numeric(d$gage_height_va)
@@ -1019,15 +1116,13 @@ mds_swm <- function(tz, sites) {
   )
   idxs <- match(qual, names(per_unc))
   d$frac_unc <- per_unc[idxs] / 100
-  d$stage_acy_va <- (d$stage_va * d$frac_unc) |> round_usgs(digits = 2)
-  d$disch_acy_va <- (d$disch_va * d$frac_unc) |> round_usgs(digits = 2)
+  d$stage_acy_va <- (d$stage_va * d$frac_unc) |> round_numbers(digits = 2)
+  d$disch_acy_va <- (d$disch_va * d$frac_unc) |> round_numbers(digits = 2)
 
   # sort records
-  idxs <- order(
-    stringi::stri_rank(tolower(d$site_nm), numeric = TRUE),
-    d$site_no,
-    d$stage_dt
-  )
+  idxs <- tolower(d$site_nm) |>
+    stringi::stri_rank(numeric = TRUE) |>
+    order(d$site_no, d$stage_dt)
   cols <- c(
     "site_nm",
     "site_no",
@@ -1046,11 +1141,11 @@ mds_swm <- function(tz, sites) {
 
 # Groundwater Levels (gwl) -----
 
-mds_gwl <- function(tz, sites) {
+mds_gwl <- function(sites, tz) {
 
   # check arguments
-  checkmate::assert_string(tz)
   checkmate::assert_class(sites, classes = "sf")
+  checkmate::assert_string(tz)
 
   # download data from NWIS
   d <- dataRetrieval::readNWISgwl(
@@ -1059,26 +1154,25 @@ mds_gwl <- function(tz, sites) {
       "72019", # depth to water level, in feet below land surface.
       "62611" # groundwater level above NAVD 88, in feet
     ),
-    convertType = TRUE,
-    tz = tz
+    convertType = FALSE
   )
 
   # add local site names
   idxs <- match(d$site_no, sites$site_no)
   d$site_nm <- sites$site_nm[idxs]
 
-  # set measurement data-time
-  ct <- d$lev_dateTime
-  is <- is.na(ct)
-  ct[is] <- paste(d$lev_dt[is], "12:00") |>
-    as.POSIXct(tz = tz, format = "%Y-%m-%d %H:%M")
-  d$lev_dt <- ct
-  is <- is.na(d$lev_dt)
+  # set measurement date-time value
+  datetime <- as_posix_ct(dt = d$lev_dt, tm = d$lev_tm, tz = tz)
+  is <- is.na(datetime)
   if (any(is)) {
-    warning("Unknown time formats, removed records:", call. = FALSE, immediate. = TRUE)
-    sprintf("  %s (%s) format '%s'", d$site_no[is], d$site_nm[is], d$lev_dateTime[is]) |>
-      paste(collapse = "\n") |> message()
+    warning("Unknown date-time format, removed records:", call. = FALSE, immediate. = TRUE)
+    sprintf("  %s '%s' date '%s' time '%s'",
+      d$site_no[is], d$site_nm[is], d$lev_dt[is], d$lev_tm[is]
+    ) |>
+      paste(collapse = "\n") |>
+      message()
   }
+  d$lev_dt <- datetime
   d <- d[!is, ]
 
   # set measurement values
@@ -1140,112 +1234,58 @@ mds_gwl <- function(tz, sites) {
 }
 
 
-# Parameter Units (units) -----
+# Units of Measurment (units) -----
 
-mds_units <- function(file) {
+mds_units <- function(data) {
 
   # check arguments
-  checkmate::assert_file_exists(file, access = "r")
+  checkmate::assert_data_frame(data, min.rows = 1, col.names = "named")
 
-  # read file
-  d <- utils::read.delim(file, comment.char = "#", na.strings = "", colClasses = "character")
+  idxs <- tolower(data$unit_cd) |> order()
+  data <- data[idxs, ]
+  rownames(data) <- NULL
 
-  idxs <- tolower(d$parm_unit) |> order()
-  d <- d[idxs, ]
-  rownames(d) <- NULL
-
-  d
+  data
 }
 
 
 # Background Concentrations (background) -----
 
-mds_background <- function(file) {
+mds_background <- function(data, parameters) {
 
   # check arguments
-  checkmate::assert_file_exists(file, access = "r")
+  checkmate::assert_data_frame(data, min.rows = 1, col.names = "named")
+  checkmate::assert_data_frame(parameters, min.rows = 1, col.names = "named")
 
-  d <- utils::read.delim(file, strip.white = TRUE, colClasses = "character")
+  # merge in parameters
+  d <- merge(x = data, y = parameters[, c("pcode", "parm_nm")], by = "pcode")
 
   d$bkgrd_min <- as.numeric(d$bkgrd_min)
   d$bkgrd_max <- as.numeric(d$bkgrd_max)
   d$reference <- as.factor(d$reference)
-  d$parm_unit <- as.factor(d$parm_unit)
+  d$unit_cd <- as.factor(d$unit_cd)
 
-  idxs <- tolower(d$srsname) |> stringi::stri_order(numeric = TRUE)
-  d <- d[idxs, ]
+  # unit conversion
+  conversion <- convert_units(d, parameters)
+  cols <- c("bkgrd_min", "bkgrd_max")
+  d[, cols] <- d[, cols] * conversion$mult
+
+  cols <- c("parm_nm", "pcode", "bkgrd_min", "bkgrd_max", "reference")
+  idxs <- tolower(d$parm_nm) |> stringi::stri_order(numeric = TRUE)
+  d <- d[idxs, cols]
   rownames(d) <- NULL
 
   d
 }
 
 
-# Eastern Snake River Plain Boundary (esrp) -----
-
-mds_esrp <- function(file, crs) {
-
-  # check arguments
-  checkmate::assert_file_exists(file, access = "r")
-  checkmate::assert_class(crs, classes = "crs")
-
-  sp <- sf::st_read(dsn = file) |>
-    sf::st_make_valid() |>
-    sf::st_transform(crs = crs, check = TRUE)
-  geometry <- sf::st_sfc(sp$geometry)
-  sp <- sf::st_sf(geometry)
-
-  sp
-}
-
-
-# Idaho National Laboratory Boundary (inl) -----
-
-mds_inl <- function(file, crs) {
-
-  # check arguments
-  checkmate::assert_file_exists(file, access = "r")
-  checkmate::assert_class(crs, classes = "crs")
-
-  sp <- sf::st_read(dsn = file) |>
-    sf::st_make_valid() |>
-    sf::st_transform(crs = crs, check = TRUE)
-  geometry <- sf::st_sfc(sp$geometry)
-  sp <- sf::st_sf(geometry)
-
-  sp
-}
-
-
-# Industrial Waste Ditch (iwd) -----
-
-mds_iwd <- function(file, crs) {
-
-  # check arguments
-  checkmate::assert_file_exists(file, access = "r")
-  checkmate::assert_class(crs, classes = "crs")
-
-  sp <- sf::st_read(dsn = file) |>
-    sf::st_make_valid() |>
-    sf::st_transform(crs = crs)
-  geometry <- sf::st_sfc(sp$geometry)
-  sp <- sf::st_sf(geometry)
-
-  sp
-}
-
-
 # Idaho National Laboratory Facilities (facilities) -----
 
-mds_facilities <- function(file, crs) {
+mds_facilities <- function(data, crs) {
 
   # check arguments
-  checkmate::assert_file_exists(file, access = "r")
+  checkmate::assert_multi_class(data, classes = c("sf", "data.frame"))
   checkmate::assert_class(crs, classes = "crs")
-
-  sp <- sf::st_read(dsn = file, agr = "identity") |>
-    sf::st_make_valid() |>
-    sf::st_transform(crs = crs, check = TRUE)
-  names(sp) <- c("id", "geometry")
 
   features <- c(
     "ATRC" = "Advanced Test Reactor Complex",
@@ -1256,365 +1296,318 @@ mds_facilities <- function(file, crs) {
     "RWMC" = "Radioactive Waste Management Complex",
     "TAN" = "Test Area North "
   )
-  sp$name <- features[match(sp$id, names(features))]
+  idxs <- match(data[["NAME"]], names(features))
+  data$name <- features[idxs]
 
-  idxs <- tolower(sp$name) |> stringi::stri_order(numeric = TRUE)
-  cols <- c("name", "id", "geometry")
-  sp <- sp[idxs, cols]
-  rownames(sp) <- NULL
+  data <- clean_sf(data,
+    cols = c(
+      "name" = "name",
+      "id" = "NAME",
+      "geometry" = "geometry"
+    ),
+    agr = "identity",
+    crs = crs
+  )
 
-  sp
+  idxs <- tolower(data$name) |>
+    stringi::stri_order(numeric = TRUE)
+  data <- data[idxs, ]
+  rownames(data) <- NULL
+
+  data
 }
 
 
 # Percolation Ponds (percponds) -----
 
-mds_percponds <- function(file, crs) {
+mds_percponds <- function(data, crs) {
 
   # check arguments
-  checkmate::assert_file_exists(file, access = "r")
+  checkmate::assert_multi_class(data, classes = c("sf", "data.frame"))
   checkmate::assert_class(crs, classes = "crs")
 
-  sp <- sf::st_read(dsn = file, agr = "identity") |>
-    sf::st_make_valid() |>
-    sf::st_transform(crs = crs, check = TRUE)
+  data <- clean_sf(data,
+    cols = c(
+      "name" = "Name",
+      "facility_id" = "Pond_loc",
+      "min_dt" = "Start_date",
+      "max_dt" = "End_date",
+      "geometry" = "geometry"
+    ),
+    agr = "identity",
+    crs = crs
+  )
 
-  cols <- c("name" = "Name", "facility_id" = "Pond_loc")
-  sp <- sp[, cols]
-  names(sp) <- c(names(cols), "geometry")
-
-  sp$facility_id <- as.factor(sp$facility_id)
+  data$facility_id <- as.factor(data$facility_id)
+  data$min_dt <- as.integer(data$min_dt)
+  data$max_dt <- as.integer(data$max_dt)
 
   idxs <- order(
-    stringi::stri_rank(tolower(sp$name), numeric = TRUE),
-    stringi::stri_rank(tolower(sp$facility_id), numeric = TRUE)
+    stringi::stri_rank(tolower(data$name), numeric = TRUE),
+    stringi::stri_rank(tolower(data$facility_id), numeric = TRUE)
   )
-  sp <- sp[idxs, ]
-  rownames(sp) <- NULL
+  data <- data[idxs, ]
+  rownames(data) <- NULL
 
-  sp
+  data
 }
 
 
 # State of Idaho Boundary (idaho) -----
 
-mds_idaho <- function(url, cachedir, crs) {
+mds_idaho <- function(data, crs) {
 
   # check arguments
-  checkmate::assert_string(url)
-  checkmate::assert_directory_exists(cachedir, access = "rw")
+  checkmate::assert_multi_class(data, classes = c("sf", "data.frame"))
   checkmate::assert_class(crs, classes = "crs")
 
-  file <- file.path(cachedir, basename(url))
-  if (!checkmate::test_file_exists(file)) {
-    assert_url(url)
-    utils::download.file(url = url, destfile = file, mode = "wb")
-  }
-  files <- utils::unzip(file, exdir = tempdir())
-  sp <- grep(".shp$", files, value = TRUE) |>
-    sf::st_read() |>
-    sf::st_make_valid() |>
-    sf::st_transform(crs = crs, check = TRUE) |>
-    sf::st_simplify(preserveTopology = TRUE, dTolerance = 100)
+  is <- data[["NAME"]] == "Idaho"
+  data <- data[is, ]
 
-  is <- sp[["NAME"]] == "Idaho"
-  geometry <- sf::st_sfc(sp[is, ]$geometry)
-  sp <- sf::st_sf(geometry)
+  data <- clean_sf(data, cols = "geometry", crs = crs)
 
-  sp
+  data <- sf::st_simplify(data,
+    preserveTopology = TRUE,
+    dTolerance = 100
+  )
+
+  data
 }
 
 
 # Cities and Towns (cities) -----
 
-mds_cities <- function(url, cachedir, crs, sp_extent) {
+mds_cities <- function(data, crs, extent) {
 
   # check arguments
-  checkmate::assert_string(url)
-  checkmate::assert_directory_exists(cachedir, access = "rw")
+  checkmate::assert_multi_class(data, classes = c("sf", "data.frame"))
   checkmate::assert_class(crs, classes = "crs")
-  checkmate::assert_class(sp_extent, "bbox")
+  checkmate::assert_class(extent, "bbox")
 
-  file <- file.path(cachedir, basename(url))
-  if (!checkmate::test_file_exists(file)) {
-    assert_url(url)
-    utils::download.file(url = url, destfile = file, mode = "wb")
-  }
-  files <- utils::unzip(file, exdir = tempdir())
-  sp <- grep(".shp$", files, value = TRUE) |>
-    sf::st_read(agr = "constant") |>
-    sf::st_make_valid() |>
-    sf::st_centroid() |>
-    sf::st_transform(crs = crs) |>
-    sf::st_crop(sp_extent)
+  data <- clean_sf(data,
+    cols = c(
+      "name" = "NAME",
+      "id" = "GEOID",
+      "geometry" = "geometry"
+    ),
+    agr = "identity",
+    crs = crs,
+    extent = extent
+  )
 
-  cols <- c("name" = "NAME", "id" = "GEOID")
-  sp <- sp[, cols]
-  names(sp) <- c(names(cols), "geometry")
+  data <- sf::st_centroid(data)
 
-  sf::st_agr(sp) <- c("name" = "identity", "id" = "identity")
+  idxs <- tolower(data$name) |>
+    stringi::stri_order(numeric = TRUE)
+  data <- data[idxs, ]
+  rownames(data) <- NULL
 
-  idxs <- tolower(sp$name) |> stringi::stri_order(numeric = TRUE)
-  sp <- sp[idxs, ]
-  rownames(sp) <- NULL
-
-  sp
+  data
 }
 
 
 # County Boundaries (counties) -----
 
-mds_counties <- function(url, cachedir, crs, sp_extent) {
+mds_counties <- function(data, crs, extent) {
 
   # check arguments
-  checkmate::assert_string(url)
-  checkmate::assert_directory_exists(cachedir, access = "rw")
+  checkmate::assert_multi_class(data, classes = c("sf", "data.frame"))
   checkmate::assert_class(crs, classes = "crs")
-  checkmate::assert_class(sp_extent, "bbox")
+  checkmate::assert_class(extent, "bbox")
 
-  file <- file.path(cachedir, basename(url))
-  if (!checkmate::test_file_exists(file)) {
-    assert_url(url)
-    utils::download.file(url = url, destfile = file, mode = "wb")
-  }
-  files <- utils::unzip(file, exdir = tempdir())
-  sp <- grep(".shp$", files, value = TRUE) |>
-    sf::st_read(agr = "constant") |>
-    sf::st_make_valid() |>
-    sf::st_transform(crs = crs, check = TRUE) |>
-    sf::st_crop(sp_extent)
+  data <- clean_sf(data,
+    cols = c(
+      "name" = "NAME",
+      "id" = "GEOID",
+      "geometry" = "geometry"
+    ),
+    agr = "identity",
+    crs = crs,
+    extent = extent
+  )
 
-  cols <- c("name" = "NAME", "id" = "GEOID")
-  sp <- sp[, cols]
-  names(sp) <- c(names(cols), "geometry")
+  idxs <- tolower(data$name) |>
+    stringi::stri_order(numeric = TRUE)
+  data <- data[idxs, ]
+  rownames(data) <- NULL
 
-  sf::st_agr(sp) <- c("name" = "identity", "id" = "identity")
-
-  idxs <- tolower(sp$name) |> stringi::stri_order(numeric = TRUE)
-  sp <- sp[idxs, ]
-  rownames(sp) <- NULL
-
-  sp
+  data
 }
 
 
 # Road Netowrk (roads) -----
 
-mds_roads <- function(prisec_url, all_urls, cachedir, crs, sp_extent) {
+mds_roads <- function(all_data, prisec_data, crs, extent) {
 
   # check arguments
-  checkmate::assert_string(prisec_url)
-  checkmate::assert_character(all_urls, min.len = 1, any.missing = FALSE)
-  checkmate::assert_directory_exists(cachedir, access = "rw")
+  checkmate::assert_multi_class(all_data, classes = c("sf", "data.frame"))
+  checkmate::assert_multi_class(prisec_data, classes = c("sf", "data.frame"))
   checkmate::assert_class(crs, classes = "crs")
-  checkmate::assert_class(sp_extent, "bbox")
+  checkmate::assert_class(extent, "bbox")
 
-  # read primary and secondary roads file
-  file <- file.path(cachedir, basename(prisec_url))
-  if (!checkmate::test_file_exists(file)) {
-    assert_url(prisec_url)
-    utils::download.file(url = prisec_url, destfile = file, mode = "wb")
-  }
-  files <- utils::unzip(file, exdir = tempdir())
-  prisec_roads <- grep(".shp$", files, value = TRUE) |> sf::st_read() |> sf::st_make_valid()
+  cols <- c(
+      "name" = "FULLNAME",
+      "id" = "LINEARID",
+      "geometry" = "geometry"
+  )
+  all_data <- clean_sf(all_data,
+    cols = cols,
+    agr = "identity",
+    crs = crs,
+    extent = extent
+  )
+  prisec_data <- clean_sf(prisec_data,
+    cols = cols,
+    agr = "identity",
+    crs = crs,
+    extent = extent
+  )
 
-  # read county road files
-  all_roads <- NULL
-  for (url in all_urls) {
-    file <- file.path(cachedir, basename(url))
-    if (!checkmate::test_file_exists(file)) {
-      assert_url(url)
-      utils::download.file(url = url, destfile = file, mode = "wb")
-    }
-    files <- utils::unzip(file, exdir = tempdir())
-    spdf <- grep(".shp$", files, value = TRUE) |>
-      sf::st_read() |>
-      sf::st_make_valid()
-    all_roads <- rbind(all_roads, spdf)
-  }
-
-  spdf <- all_roads |>
-    sf::st_make_valid() |>
-    sf::st_transform(crs = crs) |>
-    sf::st_crop(sp_extent)
-  rownames(spdf) <- NULL
-  spdf <- spdf[, "LINEARID"]
-  spdf <- stats::aggregate(
-    spdf[, "geometry"],
-    by = list(spdf[["LINEARID"]]),
+  data <- stats::aggregate(
+    all_data[, "geometry"],
+    by = list(all_data$id),
     FUN = mean
   )
-  colnames(spdf) <- c("id", "geometry")
+  colnames(data) <- c("id", "geometry")
+  idxs <- match(data$id, all_data$id)
+  data$name <- all_data$name[idxs]
+  data$prisec_fl <- data$id %in% prisec_data$id
 
-  idxs <- match(spdf$id, all_roads[["LINEARID"]])
-  spdf$name <- all_roads[["FULLNAME"]][idxs]
+  idxs <- tolower(data$name) |>
+    stringi::stri_rank(numeric = TRUE) |>
+    order(data$id)
+  cols <- c("name", "id", "prisec_fl", "geometry")
+  data <- data[idxs, cols]
+  rownames(data) <- NULL
 
-  spdf$prisec_fl <- spdf$id %in% prisec_roads[["LINEARID"]]
+  data <- sf::st_make_valid(data)
 
-  spdf <- spdf[, c("name", "id", "prisec_fl", "geometry")]
-  idxs <- spdf$name |> tolower() |> stringi::stri_rank(numeric = TRUE) |> order(spdf$id)
-  spdf <- spdf[idxs, ]
-  rownames(spdf) <- NULL
-  spdf <- sf::st_make_valid(spdf)
-
-  spdf
+  data
 }
 
 
 # Lakes and Ponds (lakes) -----
 
-mds_lakes <- function(url, cachedir, crs, sp_extent) {
+mds_lakes <- function(data, crs, extent) {
 
   # check arguments
-  checkmate::assert_string(url)
-  checkmate::assert_directory_exists(cachedir, access = "rw")
+  checkmate::assert_multi_class(data, classes = c("sf", "data.frame"))
   checkmate::assert_class(crs, classes = "crs")
-  checkmate::assert_class(sp_extent, "bbox")
+  checkmate::assert_class(extent, "bbox")
 
-  file <- file.path(cachedir, basename(url))
-  if (!checkmate::test_file_exists(file)) {
-    assert_url(url)
-    utils::download.file(url = url, destfile = file, mode = "wb")
-  }
-  sprintf("7z e -aoa -bd -o\"%s\" \"%s\"", tempdir(), file) |> system()
-  sp <- file.path(tempdir(), "NHDWaterbody.shp") |>
-    sf::st_read(agr = "constant") |>
-    sf::st_make_valid() |>
-    sf::st_transform(crs = crs, check = TRUE) |>
-    sf::st_crop(sp_extent)
-
-  cols <- c(
-    "gnis_nm" = "GNIS_NAME",
-    "id" = "COMID",
-    "reach_cd" = "REACHCODE",
-    "gnis_id" = "GNIS_ID",
-    "feature_tp" = "FTYPE"
-  )
-  sp <- sp[, cols]
-  names(sp) <- c(names(cols), "geometry")
-
-  sf::st_agr(sp) <- c(
-    "gnis_nm" = "identity",
-    "id" = "identity",
-    "reach_cd" = "identity",
-    "gnis_id" = "identity",
-    "feature_tp" = "constant"
+  data <- clean_sf(data,
+    cols = c(
+      "gnis_nm" = "GNIS_NAME",
+      "id" = "COMID",
+      "reach_cd" = "REACHCODE",
+      "gnis_id" = "GNIS_ID",
+      "feature_tp" = "FTYPE",
+      "geometry" = "geometry"
+    ),
+    agr = c(
+      "gnis_nm" = "identity",
+      "id" = "identity",
+      "reach_cd" = "identity",
+      "gnis_id" = "identity",
+      "feature_tp" = "constant"
+    ),
+    crs = crs,
+    extent = extent
   )
 
-  sp$id <- as.character(sp$id)
-  sp$feature_tp <- as.factor(sp$feature_tp)
+  data$id <- as.character(data$id)
+  data$feature_tp <- as.factor(data$feature_tp)
 
-  idxs <- order(
-    stringi::stri_rank(tolower(sp$gnis_nm), numeric = TRUE),
-    sp$id
-  )
-  sp <- sp[idxs, ]
-  rownames(sp) <- NULL
+  idxs <- tolower(data$gnis_nm) |>
+    stringi::stri_rank(numeric = TRUE) |>
+    order(data$id)
+  data <- data[idxs, ]
+  rownames(data) <- NULL
 
-  sp
+  data
 }
 
 
 # Rivers and Streams (streams) -----
 
-mds_streams <- function(url, cachedir, crs, sp_extent) {
+mds_streams <- function(data, crs, extent) {
 
   # check arguments
-  checkmate::assert_string(url)
-  checkmate::assert_directory_exists(cachedir, access = "rw")
+  checkmate::assert_multi_class(data, classes = c("sf", "data.frame"))
   checkmate::assert_class(crs, classes = "crs")
-  checkmate::assert_class(sp_extent, "bbox")
+  checkmate::assert_class(extent, "bbox")
 
-  file <- file.path(cachedir, basename(url))
-  if (!checkmate::test_file_exists(file)) {
-    assert_url(url)
-    utils::download.file(url = url, destfile = file, mode = "wb")
-  }
-  sprintf("7z e -aoa -bd -o\"%s\" \"%s\"", tempdir(), file) |> system()
-  spdf <- file.path(tempdir(), "NHDFlowline.shp") |>
-    sf::st_read(agr = "constant") |>
-    sf::st_make_valid() |>
-    sf::st_transform(crs = crs) |>
-    sf::st_crop(sp_extent)
-
-  cols <- c(
-    "gnis_nm" = "GNIS_NAME",
-    "id" = "COMID",
-    "reach_cd" = "REACHCODE",
-    "gnis_id" = "GNIS_ID",
-    "feature_tp" = "FTYPE"
-  )
-  spdf <- spdf[, cols]
-  names(spdf) <- c(names(cols), "geometry")
-
-  sf::st_agr(spdf) <- c(
-    "gnis_nm" = "identity",
-    "id" = "identity",
-    "reach_cd" = "identity",
-    "gnis_id" = "identity",
-    "feature_tp" = "constant"
+  data <- clean_sf(data,
+    cols = c(
+      "gnis_nm" = "GNIS_NAME",
+      "id" = "COMID",
+      "reach_cd" = "REACHCODE",
+      "gnis_id" = "GNIS_ID",
+      "feature_tp" = "FTYPE",
+      "geometry" = "geometry"
+    ),
+    agr = c(
+      "gnis_nm" = "identity",
+      "id" = "identity",
+      "reach_cd" = "identity",
+      "gnis_id" = "identity",
+      "feature_tp" = "constant"
+    ),
+    crs = crs,
+    extent = extent
   )
 
-  is <- !is.na(spdf$gnis_id)
-  spdf <- spdf[is, ]
+  is <- is.na(data$gnis_id)
+  data <- data[!is, ]
 
-  spdf$id <- as.character(spdf$id)
-  spdf$feature_tp <- as.factor(spdf$feature_tp)
+  data$id <- as.character(data$id)
+  data$feature_tp <- as.factor(data$feature_tp)
 
-  idxs <- spdf$gnis_nm |> tolower() |> stringi::stri_rank() |> order(spdf$id)
-  spdf <- spdf[idxs, ]
-  rownames(spdf) <- NULL
+  idxs <- tolower(data$gnis_nm) |>
+    stringi::stri_rank(numeric = TRUE) |>
+    order(data$id)
+  data <- data[idxs, ]
+  rownames(data) <- NULL
 
-  spdf
+  data
 }
 
 
 # Digital Elevation Model (dem) -----
 
-mds_dem <- function(urls, cachedir, crs, sp_extent) {
+mds_dem <- function(data, crs, extent, resolution) {
 
   # check arguments
-  checkmate::assert_character(urls, min.len = 1, any.missing = FALSE)
-  checkmate::assert_directory_exists(cachedir, access = "rw")
+  checkmate::assert_class(data, classes = "SpatRaster")
   checkmate::assert_class(crs, classes = "crs")
-  checkmate::assert_class(sp_extent, "bbox")
+  checkmate::assert_class(extent, "bbox")
+  checkmate::assert_number(resolution, lower = 1, finite = TRUE)
 
-  files <- file.path(cachedir, basename(urls))
-
-  is <- !vapply(
-    files,
-    FUN = checkmate::test_file_exists,
-    FUN.VALUE = logical(1),
-    access = "r"
-  )
-  if (any(is)) {
-    for (url in urls[is]) assert_url(url)
-    utils::download.file(
-      url = urls[is],
-      destfile = files[is],
-      method = "libcurl",
-      mode = "wb"
-    )
-  }
-
+  # make raster grid
   grd <- terra::rast(
     crs = crs$input,
-    extent = terra::ext(sp_extent),
-    resolution = 100
+    extent = terra::ext(extent),
+    resolution = resolution
   )
-  grd_disagg <- terra::disagg(grd, fact = 5L)
 
-  args <- lapply(files, FUN = terra::rast)
-  dem <- do.call(terra::merge, args)
+  # set aggregation factor
+  fact <- 5L
 
-  sr <- dem |>
-    terra::project(grd_disagg) |>
-    terra::aggregate(fact = 5L, fun = stats::median)
-  sr[] <- sr[] * 3.2808399 # convert meters to feet
-  sr[] <- round_usgs(sr[], digits = 0)
-  names(sr) <- "elevation"
+  # disaggregate raster cells
+  grd <- terra::disagg(grd, fact = fact)
 
-  terra::wrap(sr)
+  # project data into raster grid
+  r <- terra::project(data, grd)
+
+  # aggregate raster cells
+  r <- terra::aggregate(r, fact = fact, fun = stats::median)
+
+  # convert elevation from meters to feet
+  r[] <- r[] * 3.2808399
+  r[] <- round_numbers(r[], digits = 0)
+
+  names(r) <- "elevation"
+  terra::wrap(r)
 }
 
 
@@ -1652,7 +1645,8 @@ tabulate_parm_data <- function(parameters, samples) {
     FUN.VALUE = integer(1)
   )
 
-  ranks <- tolower(tbl$parm_nm) |> stringi::stri_rank(numeric = TRUE)
+  ranks <- tolower(tbl$parm_nm) |>
+    stringi::stri_rank(numeric = TRUE)
   idxs <- order(tbl$parm_group_nm, ranks)
   cols <- c(
     "pcode",
@@ -1685,11 +1679,11 @@ tabulate_site_data <- function(sites, samples, gwl, swm) {
 
   d <- stats::aggregate(x, by = by, FUN = min)
   names(d)[2] <- "min_dt"
-  dat <- merge(dat, d, by = "site_no", all = TRUE)
+  dat <- merge(dat, d, by = "site_no", all.x = TRUE)
 
   d <- stats::aggregate(x, by = by, FUN = max)
   names(d)[2] <- "max_dt"
-  dat <- merge(dat, d, by = "site_no", all = TRUE)
+  dat <- merge(dat, d, by = "site_no", all.x = TRUE)
 
   dat$min_dt <- as.Date(dat$min_dt)
   dat$max_dt <- as.Date(dat$max_dt)
@@ -1708,7 +1702,7 @@ tabulate_site_data <- function(sites, samples, gwl, swm) {
   dat$nsamples[is.na(dat$nsamples)] <- 0L
 
   is <- !is.na(samples$rep_pair_id) &
-    samples$sample_type_cd == "7"
+    samples$sample_type_cd %in% "7"
   x <- table(samples$site_no[is]) |> as.array()
   dat$nreps <- x[match(dat$site_no, names(x))] |> as.integer()
   dat$nreps[is.na(dat$nreps)] <- 0L
@@ -1727,4 +1721,46 @@ tabulate_site_data <- function(sites, samples, gwl, swm) {
   rownames(dat) <- NULL
 
   dat
+}
+
+
+# Convert Units ----
+
+convert_units <- function(data, parameters) {
+
+  # define possible conversions (add values as necessary)
+  conversions <- c(
+    "ug/L to mg/L" = 0.001,
+    "ug/L to mg/L as N" = 0.001,
+    "ug/L to mg/L as P" = 0.001
+  )
+
+  # check arguments
+  checkmate::assert_data_frame(data, min.cols = 2, col.names = "named")
+  cols <- c("pcode", "unit_cd")
+  checkmate::assert_subset(cols, choices = colnames(data))
+  checkmate::assert_vector(data$pcode, any.missing = FALSE)
+  checkmate::assert_vector(data$unit_cd, any.missing = FALSE)
+  checkmate::assert_data_frame(parameters, min.rows = 1, col.names = "named")
+
+  # set to and from
+  d <- data[, cols]
+  colnames(d) <- c("pcode", "from")
+  d$from <- as.character(d$from)
+  idxs <- match(d$pcode, parameters$pcode)
+  d$to <- parameters$unit_cd[idxs] |> as.character()
+
+  # initialize multiplier
+  d$mult <- NA_real_
+  d$mult[d$from == d$to] <- 1
+
+  # get conversion multipliers
+  types <- paste(d$from, d$to, sep = " to ")
+  convert <- types[d$from != d$to] |> unique()
+  checkmate::assert_subset(convert, choices = names(conversions))
+  for (type in convert) {
+    d$mult[types == type] <- conversions[type]
+  }
+
+  d
 }

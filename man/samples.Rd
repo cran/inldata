@@ -11,10 +11,10 @@ A data frame with columns:
 \item{\code{sample_dt}}{Date and time the sample was collected, in "America/Denver" time zone.
 Missing values of time were substituted with "12:00".}
 \item{\code{parm_short_nm}}{Parameter short name assigned by the USGS, such as "pH".}
-\item{\code{parm_unit}}{Parameter units of measure, see \code{\link{units}} dataset for unit descriptions.}
+\item{\code{unit_cd}}{Units of measurement, see \code{\link{units}} dataset for unit descriptions.}
 \item{\code{remark_cd}}{Remark code (result level) used to qualify the parameter value.
 The codes and their meanings are as follows:
-"" is a quantified value;
+\link{NA} (missing value) is a quantified value;
 "<" is where the actual value is known to be less than the value reported,
 that is, the measured concentration is below the reporting limit (RL)
 and represented as a censored (or nondetection) value.

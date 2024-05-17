@@ -3,13 +3,13 @@
 \docType{data}
 \name{units}
 \alias{units}
-\title{Parameter Units}
+\title{Units of Measurement}
 \format{
 A data frame with columns:
 \describe{
-\item{\code{parm_unit}}{Parameter units abbreviation.}
-\item{\code{desc}}{Parameter units description.}
-\item{\code{siunitx}}{Parameter units formatted for LaTeX using the
+\item{\code{unit_cd}}{Measurment abbreviation for units.}
+\item{\code{unit_ds}}{Description for units of measurement.}
+\item{\code{siunitx}}{Units formatted for LaTeX using the
 \href{https://ctan.org/pkg/siunitx}{siunitx} package notation.}
 }
 }
@@ -20,7 +20,7 @@ Idaho National Laboratory Project Office
 units
 }
 \description{
-Information describing the parameter units of measure.
+Descriptive information about the measurement units.
 }
 \examples{
 str(units)

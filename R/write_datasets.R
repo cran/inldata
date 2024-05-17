@@ -18,9 +18,12 @@
 #' @param formats 'character' vector.
 #'   Formats for saving datasets.
 #'   Choose from one or more of the following formats:
-#'   `csv`, `geojson`, `json`, `parquet`, `shp`, `tiff`, `txt`, and `xlsx`.
-#'   Please refer to the *details* section for a description of each format.
+#'   `txt`, `json`, `csv`, `xlsx`, `parquet`, `geojson`, `shp`, and `tiff`.
+#'   Please refer to the *Details* section for a description of each format.
 #'   All file formats are saved to the disk by default.
+#' @param gzip 'character' vector.
+#'   File `formats` that are eligible for Gzip compression.
+#'   At present, it accommodates `txt`, `json`, and `geojson` formats exclusively.
 #' @param overwrite 'logical' flag.
 #'   Whether to overwrite an existing file.
 #' @param include 'character' vector.
@@ -33,6 +36,8 @@
 #'   Whether to add indentation, whitespace, and newlines to JSON output (default is `TRUE`).
 #'   See [`prettify`][jsonlite::prettify] function for details.
 #'   The tradeoff for human-readable output is a much larger file size.
+#' @param full_names 'logical' flag.
+#'   Whether the full paths of the files are returned (default).
 #' @param quiet 'logical' flag.
 #'   Whether to suppress printing of debugging information.
 #'
@@ -57,6 +62,7 @@
 #' write_datasets(
 #'   package = "inldata",
 #'   destdir = dir,
+#'   formats = c("txt", "csv", "json", "geojson"),
 #'   include = c("crs", "dl", "inl"),
 #'   pretty = FALSE,
 #'   quiet = TRUE
@@ -67,10 +73,12 @@
 write_datasets <- function(package,
                            destdir = getwd(),
                            formats = NULL,
+                           gzip = NULL,
                            overwrite = TRUE,
                            include = NULL,
                            exclude = NULL,
                            pretty = TRUE,
+                           full_names = TRUE,
                            quiet = FALSE) {
 
   # check arguments
@@ -82,12 +90,22 @@ write_datasets <- function(package,
     unique = TRUE,
     null.ok = TRUE
   )
-  choices <- c("csv", "geojson", "json", "parquet", "shp", "tiff", "txt", "xlsx")
+  choices <- c(
+    "csv",
+    "geojson",
+    "json",
+    "parquet",
+    "shp",
+    "tiff",
+    "txt",
+    "xlsx"
+  )
   if (is.null(formats)) {
     formats <- choices
   }
   checkmate::assert_subset(formats, choices = choices)
-  checkmate::assert_logical(overwrite)
+  checkmate::assert_subset(gzip, choices = c("json", "geojson"))
+  checkmate::assert_flag(overwrite)
   checkmate::assert_character(include,
     any.missing = FALSE,
     unique = TRUE,
@@ -100,8 +118,9 @@ write_datasets <- function(package,
     min.len = 1,
     null.ok = TRUE
   )
-  checkmate::assert_logical(pretty)
-  checkmate::assert_logical(quiet)
+  checkmate::assert_flag(pretty)
+  checkmate::assert_flag(full_names)
+  checkmate::assert_flag(quiet)
 
   # check packages
   pkgs <- c(
@@ -118,11 +137,17 @@ write_datasets <- function(package,
     normalizePath(winslash = "/", mustWork = FALSE)
   dir.create(destdir, showWarnings = FALSE, recursive = TRUE)
 
+  # check if working in package directory
+  is_pkg_dir <- test_pkg_dir(package)
+
   # get package dataset names
-  ds_names <- utils::data(
-    package = package,
-    verbose = !quiet
-  )$results[, "Item"]
+  if (is_pkg_dir) {
+    ds_paths <- list.files("data", pattern = "*.rda", full.names = TRUE)
+    ds_names <- basename(ds_paths) |> tools::file_path_sans_ext()
+    names(ds_paths) <- ds_names
+  } else {
+    ds_names <- utils::data(package = package, verbose = !quiet)$results[, "Item"]
+  }
 
   # include datasets
   if (!is.null(include)) {
@@ -153,15 +178,23 @@ write_datasets <- function(package,
         message()
     }
 
-    # save dataset to a temporary environment
+    # get dataset
     envir <- new.env()
-    nm <- utils::data(
-      list = name,
-      package = package,
-      verbose = !quiet,
-      envir = envir
-    )[1]
-    ds <- envir[[nm]]
+    if (is_pkg_dir) {
+      nm <- load(
+        file = ds_paths[name],
+        envir = envir,
+        verbose = !quiet
+      )
+    } else {
+      nm <- utils::data(
+        list = name,
+        package = package,
+        envir = envir,
+        verbose = !quiet
+      )
+    }
+    ds <- envir[[nm[1]]]
 
     # simple feature class
     if (inherits(ds, c("sf", "sfc"))) {
@@ -192,9 +225,14 @@ write_datasets <- function(package,
             quiet = quiet,
             delete_dsn = checkmate::test_file_exists(path, access = "rw")
           )
-        txt <- readLines(con = path, encoding = "UTF-8")
-        txt <- if (pretty) jsonlite::prettify(txt, indent = 2) else jsonlite::minify(txt)
-        writeLines(text = txt, con = path, useBytes = TRUE)
+        text <- readLines(con = path, encoding = "UTF-8")
+        if (pretty) {
+          text <- jsonlite::prettify(text, indent = 2)
+        } else {
+          text <- jsonlite::minify(text)
+        }
+        path <- write_lines(text, path, gz = "geojson" %in% gzip)
+        paths <- c(paths, path)
       }
 
       # write compressed SHP files
@@ -212,6 +250,7 @@ write_datasets <- function(package,
         checkmate::assert_path_for_output(path, overwrite = overwrite)
         utils::zip(path, files = files, extras = "-j")
         unlink(files)
+        paths <- c(paths, path)
       }
 
     # spatial raster class
@@ -223,6 +262,7 @@ write_datasets <- function(package,
         checkmate::assert_path_for_output(path, overwrite = overwrite)
         terra::unwrap(ds) |>
           terra::writeRaster(filename = path, overwrite = TRUE, verbose = !quiet)
+        paths <- c(paths, path)
       }
 
     # data frame class
@@ -237,16 +277,23 @@ write_datasets <- function(package,
           sep = ",",
           row.names = FALSE,
           qmethod = "double",
-          fileEncoding = "UTF-16LE"
+          fileEncoding = "UTF-8"
         )
+        paths <- c(paths, path)
       }
 
       # write JSON file
       if ("json" %in% formats) {
         path <- sprintf("%s/%s.json", destdir, name)
         checkmate::assert_path_for_output(path, overwrite = overwrite)
-        jsonlite::toJSON(ds, null = "null", na = "null", digits = 8, pretty = pretty) |>
-          writeLines(con = path, useBytes = TRUE)
+        text <- jsonlite::toJSON(ds,
+          null = "null",
+          na = "null",
+          digits = 8,
+          pretty = pretty
+        )
+        path <- write_lines(text, path, gz = "json" %in% gzip)
+        paths <- c(paths, path)
       }
 
       # write Parquet file
@@ -254,6 +301,7 @@ write_datasets <- function(package,
         path <- sprintf("%s/%s.parquet", destdir, name)
         checkmate::assert_path_for_output(path, overwrite = overwrite)
         arrow::write_parquet(ds, sink = path, compression = "snappy")
+        paths <- c(paths, path)
       }
 
       # write XLSX file
@@ -261,6 +309,7 @@ write_datasets <- function(package,
         path <- sprintf("%s/%s.xlsx", destdir, name)
         checkmate::assert_path_for_output(path, overwrite = overwrite)
         writexl::write_xlsx(ds, path = path)
+        paths <- c(paths, path)
       }
 
     # coordinate reference system class
@@ -270,17 +319,23 @@ write_datasets <- function(package,
       if ("txt" %in% formats) {
         path <- sprintf("%s/%s.txt", destdir, name)
         checkmate::assert_path_for_output(path, overwrite = overwrite)
-        writeLines(ds$wkt, con = path)
+        path <- write_lines(ds$wkt, path, gz = "txt" %in% gzip)
+        paths <- c(paths, path)
       }
 
     # other classes
     } else {
-      sprintf("Class '%s' for dataset '%s' is not accounted for.", class(ds), name) |>
+      sprintf("Class '%s' for dataset '%s' is not accounted for.",
+        class(ds), name
+      ) |>
         stop(call. = FALSE)
     }
+  }
 
-    # append path
-    paths <- c(paths, path)
+  # express as relative path
+  if (!full_names) {
+    paths <- sprintf("^%s/", getwd()) |>
+      sub(replacement = "", x = paths)
   }
 
   # return output paths

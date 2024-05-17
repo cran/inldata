@@ -1,12 +1,12 @@
-#' Parameter Units
+#' Units of Measurement
 #'
-#' @description Information describing the parameter units of measure.
+#' @description Descriptive information about the measurement units.
 #'
 #' @format A data frame with columns:
 #'   \describe{
-#'     \item{`parm_unit`}{Parameter units abbreviation.}
-#'     \item{`desc`}{Parameter units description.}
-#'     \item{`siunitx`}{Parameter units formatted for LaTeX using the
+#'     \item{`unit_cd`}{Measurment abbreviation for units.}
+#'     \item{`unit_ds`}{Description for units of measurement.}
+#'     \item{`siunitx`}{Units formatted for LaTeX using the
 #'       [siunitx](https://ctan.org/pkg/siunitx) package notation.}
 #'   }
 #'

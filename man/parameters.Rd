@@ -32,7 +32,7 @@ such as "10098-97-2" for Strontium-90.}
 \item{\code{srsname}}{Substance Registry Services
 (\href{https://sor.epa.gov/sor_internet/registry/substreg/home/overview/home.do}{SRS}) name,
 such as "Strontium-90".}
-\item{\code{parm_unit}}{Parameter units of measure, see \code{\link{units}} dataset for unit descriptions.}
+\item{\code{unit_cd}}{Units of measurement, see \code{\link{units}} dataset for unit descriptions.}
 \item{\code{min_dt}}{Collection date of first sample analyzed for the parameter.}
 \item{\code{max_dt}}{Collection date of last sample analyzed for the parameter.}
 \item{\code{nrecords}}{Number of records associated with the parameter.}

@@ -76,12 +76,12 @@ help(package = "inldata")
 
 ## Authors
 
--   Jason C. Fisher (ORCID iD
-    [0000-0001-9032-8912](https://orcid.org/0000-0001-9032-8912))
--   Allison R. Trcka (ORCID iD
-    [0000-0001-8498-4737](https://orcid.org/0000-0001-8498-4737))
--   Kerri C. Treinen (ORCID iD
-    [0000-0003-0645-6810](https://orcid.org/0000-0003-0645-6810))
+- Jason C. Fisher (ORCID iD
+  [0000-0001-9032-8912](https://orcid.org/0000-0001-9032-8912))
+- Allison R. Trcka (ORCID iD
+  [0000-0001-8498-4737](https://orcid.org/0000-0001-8498-4737))
+- Kerri C. Treinen (ORCID iD
+  [0000-0003-0645-6810](https://orcid.org/0000-0003-0645-6810))
 
 ## Point of Contact
 

@@ -11,10 +11,12 @@ make_datasets(
   tz = "America/Denver",
   census_yr = 2023,
   buffer_dist = 1000,
+  resolution = 100,
   warn = 1,
   timeout = 10,
   compress = "xz",
-  seed = 0L
+  seed = 0L,
+  quiet = FALSE
 )
 }
 \arguments{
@@ -41,8 +43,11 @@ United States census year.}
 
 \item{buffer_dist}{'numeric' number.
 Buffer distance for the study area defined by the bounding of the sample \code{\link{sites}} dataset.
-The buffer distance is measured in units of the coordinate reference system
-(\code{\link[sf:st_crs]{crs$units}}).}
+Specified in units of the coordinate reference system (\code{crs$units}).}
+
+\item{resolution}{'numeric' number.
+Spatial resolution of the raster grid, in meters.
+Specify in units of the coordinate reference system (\code{crs$units}).}
 
 \item{warn}{'integer' value.
 Sets the handling of warning messages.
@@ -60,6 +65,9 @@ See the \code{\link{save}} function for details on compression types.}
 
 \item{seed}{'integer' count.
 Random number generator state, used to create reproducible results.}
+
+\item{quiet}{'logical' flag.
+Whether to suppress printing of debugging information.}
 }
 \value{
 Returns the paths to the newly created R Data files invisibly.

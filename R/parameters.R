@@ -32,7 +32,7 @@
 #'     \item{`srsname`}{Substance Registry Services
 #'       ([SRS](https://sor.epa.gov/sor_internet/registry/substreg/home/overview/home.do)) name,
 #'       such as "Strontium-90".}
-#'     \item{`parm_unit`}{Parameter units of measure, see [`units`] dataset for unit descriptions.}
+#'     \item{`unit_cd`}{Units of measurement, see [`units`] dataset for unit descriptions.}
 #'     \item{`min_dt`}{Collection date of first sample analyzed for the parameter.}
 #'     \item{`max_dt`}{Collection date of last sample analyzed for the parameter.}
 #'     \item{`nrecords`}{Number of records associated with the parameter.}

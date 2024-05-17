@@ -16,24 +16,35 @@
 #' @keywords internal
 #'
 #' @examples
-#' get_cache_dir("test")
+#' dir <- get_cache_dir("test")
 #'
 #' clear_cache_dir("test")
 
 get_cache_dir <- function(name = "inldata") {
+
+  # check arguments
   checkmate::assert_string(name)
 
+  # set directory
   dir <- Sys.getenv("CACHE_DIR")
-
-  if (!checkmate::test_directory_exists(dir, access = "rw")) {
-    if (requireNamespace("rappdirs", quietly = TRUE)) {
-      dir <- rappdirs::user_cache_dir(name) |>
-        normalizePath(winslash = "/", mustWork = FALSE)
-      dir.create(dir, showWarnings = FALSE, recursive = TRUE)
+  if (identical(dir, "")) {
+    is <- requireNamespace("rappdirs", quietly = TRUE)
+    if (is) {
+      dir <- rappdirs::user_cache_dir(name)
     } else {
-      dir <- tempdir()
+      dir <- file.path(tempdir(), "cache", name)
     }
   }
+
+  # format path
+  dir <- path.expand(dir) |>
+    normalizePath(winslash = "/", mustWork = FALSE)
+
+  # create directory
+  dir.create(dir, showWarnings = FALSE, recursive = TRUE)
+
+  # check directory
+  checkmate::assert_directory_exists(dir, access = "rw")
 
   dir
 }

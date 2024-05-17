@@ -14,10 +14,10 @@
 #'   \item{`sample_dt`}{Date and time the sample was collected, in "America/Denver" time zone.
 #'     Missing values of time were substituted with "12:00".}
 #'   \item{`parm_short_nm`}{Parameter short name assigned by the USGS, such as "pH".}
-#'   \item{`parm_unit`}{Parameter units of measure, see [`units`] dataset for unit descriptions.}
+#'   \item{`unit_cd`}{Units of measurement, see [`units`] dataset for unit descriptions.}
 #'   \item{`remark_cd`}{Remark code (result level) used to qualify the parameter value.
 #'     The codes and their meanings are as follows:
-#'     "" is a quantified value;
+#'     [NA] (missing value) is a quantified value;
 #'     "<" is where the actual value is known to be less than the value reported,
 #'       that is, the measured concentration is below the reporting limit (RL)
 #'       and represented as a censored (or nondetection) value.

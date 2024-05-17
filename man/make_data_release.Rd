@@ -53,17 +53,15 @@ should be included in the package CITATION file, and documented in that order.
 }
 \examples{
 destdir <- tempfile("")
+rngdates <- c(samples$sample_dt, gwl$lev_dt) |> range()
 l <- make_data_release(
   metadata = system.file("extdata/metadata.json", package = "inldata"),
   package = "inldata",
   destdir = destdir,
-  include = c("crs", "dl"),
+  include = "crs",
   quiet = TRUE,
   bounding = sites,
-  rngdates = c(
-    samples$sample_dt,
-    gwl$lev_dt
-  )
+  rngdates = rngdates
 )
 str(l, 1)
 
