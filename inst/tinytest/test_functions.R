@@ -42,3 +42,31 @@ x <- clean_sf(cities,
   extent = sf::st_bbox(esrp)
 )
 expect_multi_class(x, classes = c("sf", "data.frame"))
+
+# test creating an entity relationship diagram
+file <- make_dm() |> make_erd()
+expect_file_exists(file, access = "rw")
+unlink(file)
+
+# test creating a data release
+destdir <- tempfile("")
+include <- c("crs", "units", "cities", "dem")
+rngdates <- c(samples$sample_dt, gwl$lev_dt) |> range()
+l <- make_data_release(
+  metadata = system.file("extdata/metadata.json", package = "inldata"),
+  package = "inldata",
+  destdir = destdir,
+  include = include,
+  quiet = TRUE,
+  bounding = sites,
+  rngdates = rngdates
+)
+expect_list(l, names = "named")
+x <- list.files(destdir)
+expect_character(x, min.len = length(include), names = "unnamed")
+tools::file_path_sans_ext(x) |> unique() |> expect_subset(choices = c(include, "metadata"))
+unlink(destdir, recursive = TRUE)
+
+# test cleaning a simple feature
+x <- clean_sf(inl, cols = "geometry", crs = sf::st_crs(3857))
+expect_multi_class(x, classes = c("sf", "data.frame"))

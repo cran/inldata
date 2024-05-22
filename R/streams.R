@@ -33,6 +33,4 @@
 #'
 #' @examples
 #' print(streams)
-#'
-#' plot(streams["id"], col = "blue")
 "streams"

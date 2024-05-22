@@ -28,6 +28,4 @@
 #'
 #' @examples
 #' print(facilities)
-#'
-#' plot(facilities["id"])
 "facilities"

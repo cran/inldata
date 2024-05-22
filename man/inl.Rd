@@ -30,7 +30,5 @@ environmental research, and advanced energy concepts.
 }
 \examples{
 print(inl)
-
-plot(inl, col = "grey")
 }
 \keyword{datasets}

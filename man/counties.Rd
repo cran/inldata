@@ -30,7 +30,5 @@ County boundaries in the vicinity of Idaho National Laboratory, eastern Idaho.
 }
 \examples{
 print(counties)
-
-plot(counties["name"])
 }
 \keyword{datasets}

@@ -29,6 +29,4 @@
 #'
 #' @examples
 #' print(lakes)
-#'
-#' plot(lakes["id"], col = "lightblue", border = "blue")
 "lakes"

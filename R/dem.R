@@ -34,7 +34,4 @@
 #' @examples
 #' elevation <- terra::unwrap(dem)
 #' print(elevation)
-#'
-#' col <- inlcolor::get_colors(n = 256, scheme = "dem2", bias = 0.9)
-#' terra::plot(elevation, col = col)
 "dem"

@@ -2,8 +2,7 @@
 #'
 #' @description Create datasets for the \pkg{inldata} package and save each as an
 #'   R-data file with the `.rda` extension, which is a format native to \R.
-#'   The \pkg{stats} \pkg{dataRetrieval}, and \pkg{stringi} packages must be available,
-#'   and the [7z](https://www.7-zip.org/) executable must be on your path.
+#'   The \pkg{stats} \pkg{dataRetrieval}, and \pkg{stringi} packages must be available.
 #'   This function is intended for use by \pkg{inldata}-package developers.
 #'
 #' @param path 'character' string.
@@ -100,7 +99,7 @@ make_datasets <- function(path = getwd(),
   # check arguments
   path <- path.expand(path) |>
     normalizePath(winslash = "/", mustWork = FALSE)
-  checkmate::assert_directory_exists(path, access = "rw")
+  checkmate::assert_directory_exists(path, access = "r")
   destdir <- path.expand(destdir) |>
     normalizePath(winslash = "/", mustWork = FALSE)
   checkmate::assert_flag(clean)
@@ -1395,7 +1394,7 @@ mds_cities <- function(data, crs, extent) {
     extent = extent
   )
 
-  data <- sf::st_centroid(data)
+  data <- suppressWarnings(sf::st_centroid(data))
 
   idxs <- tolower(data$name) |>
     stringi::stri_order(numeric = TRUE)

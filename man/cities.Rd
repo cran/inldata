@@ -28,7 +28,5 @@ Cities and towns (populated places) in the vicinity of Idaho National Laboratory
 }
 \examples{
 print(cities)
-
-plot(cities["name"], pch = 19)
 }
 \keyword{datasets}

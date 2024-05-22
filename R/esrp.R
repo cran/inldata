@@ -23,6 +23,4 @@
 #'
 #' @examples
 #' print(esrp)
-#'
-#' plot(esrp, col = "grey")
 "esrp"

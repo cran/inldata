@@ -25,7 +25,5 @@ The waste ditch was initially used in 1953 to dispose of non-radioactive, non-se
 }
 \examples{
 print(iwd)
-
-plot(iwd, col = "blue")
 }
 \keyword{datasets}

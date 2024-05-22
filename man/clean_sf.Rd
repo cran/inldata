@@ -37,9 +37,6 @@ Returns an object of class 'sf'.
 Subset columns, transform coordinates,
 and (or) crop the spatial extent of a simple feature.
 }
-\examples{
-sp <- clean_sf(inl, cols = "geometry", crs = sf::st_crs(3857))
-}
 \author{
 J.C. Fisher, U.S. Geological Survey, Idaho Water Science Center
 }

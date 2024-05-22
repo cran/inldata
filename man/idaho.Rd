@@ -29,7 +29,5 @@ a state located in the northwestern region of the United States.
 }
 \examples{
 print(idaho)
-
-plot(idaho, col = "grey")
 }
 \keyword{datasets}

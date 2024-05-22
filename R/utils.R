@@ -258,10 +258,10 @@ get_file_size <- function(paths) {
 
 test_pkg_dir <- function(pkg) {
   checkmate::assert_string(pkg)
-  if (checkmate::test_file_exists("DESCRIPTION", access = "rw")) {
+  if (checkmate::test_file_exists("DESCRIPTION", access = "r")) {
     package <- read.dcf("DESCRIPTION", fields = "Package") |> as.character()
     if (identical(package, pkg)) {
-      if (checkmate::test_directory_exists("inst", access = "rw")) {
+      if (checkmate::test_directory_exists("inst", access = "r")) {
         return(TRUE)
       }
     }

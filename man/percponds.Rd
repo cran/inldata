@@ -42,7 +42,5 @@ evaporation (lined and unlined), and infiltration ponds.
 }
 \examples{
 print(percponds)
-
-plot(percponds["name"], col = "lightblue", border = "blue")
 }
 \keyword{datasets}

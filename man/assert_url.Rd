@@ -6,7 +6,7 @@
 \source{
 Code adapted from
 \href{https://stackoverflow.com/questions/52911812/check-if-url-exists-in-r}{Stack Overflow},
-accessed on 2023-12-11 and authored by \href{https://rud.is/b/}{Bob Rudis}.
+accessed on 2023-12-11 and authored by Bob Rudis.
 }
 \usage{
 assert_url(url, ...)

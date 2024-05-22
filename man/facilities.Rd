@@ -36,7 +36,5 @@ This is due to the wastewater disposal practices at the INL facilities.
 }
 \examples{
 print(facilities)
-
-plot(facilities["id"])
 }
 \keyword{datasets}

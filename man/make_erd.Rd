@@ -23,11 +23,6 @@ Invisibly returns the file path.
 Create an Entity-Relationship Diagram (ERD) from a data model and save it to disk in SVG format.
 Requires that the \pkg{dm}, \pkg{DiagrammeR}, \pkg{V8}, and \pkg{DiagrammeRsvg} packages are available.
 }
-\examples{
-path <- make_dm() |> make_erd()
-
-unlink(path)
-}
 \seealso{
 \code{\link{make_dm}} function for creating a data model for the \pkg{inldata} package.
 }

@@ -21,6 +21,4 @@
 #'
 #' @examples
 #' print(idaho)
-#'
-#' plot(idaho, col = "grey")
 "idaho"

@@ -1,3 +1,12 @@
+# inldata 1.2.3
+
+- Add a unit test for the `clean_sf` function to replace the example in its help documentation.
+
+# inldata 1.2.2
+
+- Remove graphic images from the help documentation of spatial datasets.
+- Prevent unit tests from writing to the working directory.
+
 # inldata 1.2.1
 
 - Revise the examples in the help documentation for the `clean_sf`, `make_data_release`,

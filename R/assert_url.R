@@ -12,7 +12,7 @@
 #'
 #' @source Code adapted from
 #'   [Stack Overflow](https://stackoverflow.com/questions/52911812/check-if-url-exists-in-r),
-#'   accessed on 2023-12-11 and authored by [Bob Rudis](https://rud.is/b/).
+#'   accessed on 2023-12-11 and authored by Bob Rudis.
 #'
 #' @export
 #'

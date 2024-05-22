@@ -75,8 +75,7 @@ Returns the paths to the newly created R Data files invisibly.
 \description{
 Create datasets for the \pkg{inldata} package and save each as an
 R-data file with the \code{.rda} extension, which is a format native to \R.
-The \pkg{stats} \pkg{dataRetrieval}, and \pkg{stringi} packages must be available,
-and the \href{https://www.7-zip.org/}{7z} executable must be on your path.
+The \pkg{stats} \pkg{dataRetrieval}, and \pkg{stringi} packages must be available.
 This function is intended for use by \pkg{inldata}-package developers.
 }
 \details{

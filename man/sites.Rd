@@ -128,8 +128,6 @@ was omitted from the dataset because its geographical location falls outside the
 }
 \examples{
 print(sites)
-
-plot(sites["network_cd"])
 }
 \references{
 Bartholomay, R.C., 2022,

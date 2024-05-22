@@ -22,6 +22,4 @@
 #'
 #' @examples
 #' print(inl)
-#'
-#' plot(inl, col = "grey")
 "inl"

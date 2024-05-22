@@ -334,7 +334,7 @@ write_datasets <- function(package,
 
   # express as relative path
   if (!full_names) {
-    paths <- sprintf("^%s/", getwd()) |>
+    paths <- sprintf("^%s/", destdir) |>
       sub(replacement = "", x = paths)
   }
 

@@ -6,8 +6,8 @@ using("checkmate")
 # test existence of data-raw folder
 destdir <- tempfile("")
 expect_error(
-  current = make_datasets(destdir = destdir),
-  pattern = "does not exist.$"
+  current = make_datasets(path = tempdir(), destdir = destdir),
+  pattern = "does not exist"
 )
 unlink(destdir)
 

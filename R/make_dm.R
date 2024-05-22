@@ -13,9 +13,6 @@
 #' @keywords internal
 #'
 #' @seealso [`make_erd`] function for creating an entity-relationship diagram.
-#'
-#' @examples
-#' make_dm()
 
 make_dm <- function() {
 

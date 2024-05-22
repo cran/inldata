@@ -41,7 +41,5 @@ through river and streams.
 }
 \examples{
 print(streams)
-
-plot(streams["id"], col = "blue")
 }
 \keyword{datasets}

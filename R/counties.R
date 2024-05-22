@@ -22,6 +22,4 @@
 #'
 #' @examples
 #' print(counties)
-#'
-#' plot(counties["name"])
 "counties"

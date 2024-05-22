@@ -19,11 +19,6 @@
 #' @keywords internal
 #'
 #' @seealso [`make_dm`] function for creating a data model for the \pkg{inldata} package.
-#'
-#' @examples
-#' path <- make_dm() |> make_erd()
-#'
-#' unlink(path)
 
 make_erd <- function(dm, path = tempfile(fileext = ".svg"), overwrite = FALSE) {
 

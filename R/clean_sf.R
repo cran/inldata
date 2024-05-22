@@ -29,9 +29,6 @@
 #' @export
 #'
 #' @keywords internal
-#'
-#' @examples
-#' sp <- clean_sf(inl, cols = "geometry", crs = sf::st_crs(3857))
 
 clean_sf <- function(x,
                      cols = NULL,

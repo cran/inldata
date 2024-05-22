@@ -17,6 +17,4 @@
 #'
 #' @examples
 #' print(iwd)
-#'
-#' plot(iwd, col = "blue")
 "iwd"

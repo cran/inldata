@@ -31,7 +31,5 @@ which is the primary source of groundwater in the basin
 }
 \examples{
 print(esrp)
-
-plot(esrp, col = "grey")
 }
 \keyword{datasets}

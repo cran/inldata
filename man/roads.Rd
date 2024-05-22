@@ -30,7 +30,5 @@ Road network in the vicinity of Idaho National Laboratory, eastern Idaho.
 }
 \examples{
 print(roads)
-
-plot(roads["prisec_fl"])
 }
 \keyword{datasets}

@@ -20,6 +20,4 @@
 #'
 #' @examples
 #' print(cities)
-#'
-#' plot(cities["name"], pch = 19)
 "cities"

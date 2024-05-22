@@ -31,9 +31,6 @@ to describe the elevation values of the terrain.
 \examples{
 elevation <- terra::unwrap(dem)
 print(elevation)
-
-col <- inlcolor::get_colors(n = 256, scheme = "dem2", bias = 0.9)
-terra::plot(elevation, col = col)
 }
 \references{
 Gesch, D.B., 2007, The National Elevation Dataset, in Maune, D., ed.,

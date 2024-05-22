@@ -14,9 +14,6 @@ Create a data model object from \pkg{inldata} package datasets.
 A data model holds a list of tables and their relationships.
 Requires that the \pkg{dm} package is available.
 }
-\examples{
-make_dm()
-}
 \seealso{
 \code{\link{make_erd}} function for creating an entity-relationship diagram.
 }

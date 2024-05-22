@@ -22,6 +22,4 @@
 #'
 #' @examples
 #' print(roads)
-#'
-#' plot(roads["prisec_fl"])
 "roads"

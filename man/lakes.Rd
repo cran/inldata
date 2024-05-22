@@ -37,7 +37,5 @@ Perennial lakes and ponds in the vicinity of the Idaho National Laboratory (INL)
 }
 \examples{
 print(lakes)
-
-plot(lakes["id"], col = "lightblue", border = "blue")
 }
 \keyword{datasets}

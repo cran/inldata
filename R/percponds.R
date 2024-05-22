@@ -34,6 +34,4 @@
 #'
 #' @examples
 #' print(percponds)
-#'
-#' plot(percponds["name"], col = "lightblue", border = "blue")
 "percponds"

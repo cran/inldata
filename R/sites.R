@@ -133,6 +133,4 @@
 #'
 #' @examples
 #' print(sites)
-#'
-#' plot(sites["network_cd"])
 "sites"
