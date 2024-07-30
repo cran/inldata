@@ -112,7 +112,7 @@ By default the location of the cache directory is determined by the \code{\link[
 # Example requires that the 'path' argument be specified as
 # the top-level directory of the inldata package repository.
 \dontrun{
-make_datasets(destdir = tempfile(""))
+  make_datasets(destdir = tempfile(""))
 }
 }
 \author{

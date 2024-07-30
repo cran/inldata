@@ -23,17 +23,6 @@ if (test_file_exists(Sys.which("mp"), access = "x")) {
   unlink(dir, recursive = TRUE)
 }
 
-# test URL assertion
-expect_silent(assert_url("https://www.usa.gov/"))
-expect_error(assert_url("https://fail/on/bad/url/"))
-expect_error(assert_url("https://anyapi.io/api/v1/exchange/rates?base=NAN&apiKey=123"))
-
-# test downloading file
-url <- "https://code.usgs.gov/inl/inldata/-/raw/main/CODE_OF_CONDUCT.md"
-file <- download_file(url, cachedir = tempdir(), quiet = TRUE)
-expect_file_exists(file, access = "rw")
-unlink(file)
-
 # test cleaning simple feature
 x <- clean_sf(cities,
   cols = c("key" = "id", "geometry" = "geometry"),
@@ -70,3 +59,8 @@ unlink(destdir, recursive = TRUE)
 # test cleaning a simple feature
 x <- clean_sf(inl, cols = "geometry", crs = sf::st_crs(3857))
 expect_multi_class(x, classes = c("sf", "data.frame"))
+
+# test URL assertion
+expect_silent(assert_url("https://www.usa.gov/"))
+expect_null(assert_url("https://fail/on/bad/url/"))
+expect_null(assert_url("https://anyapi.io/api/v1/exchange/rates?base=NAN&apiKey=123"))

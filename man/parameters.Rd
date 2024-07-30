@@ -27,7 +27,7 @@ used to trace the movement of water through the hydrologic cycle.}
 \item{\code{parm_nm}}{Long parameter name,
 such as "Strontium-90, water, unfiltered, picocuries per liter".}
 \item{\code{casrn}}{Chemical Abstracts Service
-(\href{https://www.cas.org/support/documentation/chemical-substances/faqs}{CAS}) registry number,
+(\href{https://www.cas.org/cas-data/cas-registry}{CAS}) registry number,
 such as "10098-97-2" for Strontium-90.}
 \item{\code{srsname}}{Substance Registry Services
 (\href{https://sor.epa.gov/sor_internet/registry/substreg/home/overview/home.do}{SRS}) name,

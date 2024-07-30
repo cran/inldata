@@ -9,6 +9,7 @@
 #'   Other arguments passed to the [`httr::HEAD`] and [`httr::GET`] functions.
 #'
 #' @return Returns `url` invisibly.
+#'   A `NULL` value is returned if the assertion fails for any reason.
 #'
 #' @source Code adapted from
 #'   [Stack Overflow](https://stackoverflow.com/questions/52911812/check-if-url-exists-in-r),
@@ -31,6 +32,12 @@ assert_url <- function(url, ...) {
   # check packages
   check_package(pkg = "httr", msg = "URL assertions")
 
+  # check internet connection
+  if (!curl::has_internet()) {
+    message("No internet connection.")
+    return(invisible(NULL))
+  }
+
   f <- safely(httr::HEAD)
   res <- f(url, ...)
 
@@ -39,12 +46,14 @@ assert_url <- function(url, ...) {
     res <- f(url, ...)
     if (is.null(res$result)) {
       sprintf("Assertion on '%s' failed: hard error with no response.", url) |>
-        stop(call. = FALSE)
+        message()
+      return(invisible(NULL))
     }
 
     if (((httr::status_code(res$result) %/% 200) != 1)) {
       sprintf("Assertion on '%s' failed: responded but without an HTTP status code in the 200-299 range.", url) |>
-        stop(call. = FALSE)
+        message()
+      return(invisible(NULL))
     }
   }
 

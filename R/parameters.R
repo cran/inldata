@@ -27,7 +27,7 @@
 #'     \item{`parm_nm`}{Long parameter name,
 #'       such as "Strontium-90, water, unfiltered, picocuries per liter".}
 #'     \item{`casrn`}{Chemical Abstracts Service
-#'       ([CAS](https://www.cas.org/support/documentation/chemical-substances/faqs)) registry number,
+#'       ([CAS](https://www.cas.org/cas-data/cas-registry)) registry number,
 #'       such as "10098-97-2" for Strontium-90.}
 #'     \item{`srsname`}{Substance Registry Services
 #'       ([SRS](https://sor.epa.gov/sor_internet/registry/substreg/home/overview/home.do)) name,

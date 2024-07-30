@@ -19,6 +19,7 @@ URL}
 }
 \value{
 Returns \code{url} invisibly.
+A \code{NULL} value is returned if the assertion fails for any reason.
 }
 \description{
 Assert that a Uniform Resource Locator (URL) is complete and valid.

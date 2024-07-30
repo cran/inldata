@@ -1,4 +1,5 @@
 ```{js, echo=FALSE}
+
 // Custom range filter with value label
 // Code copied from R-package 'reactable' vignette at
 // https://github.com/glin/reactable/blob/HEAD/vignettes/custom-filtering.Rmd
@@ -7,8 +8,7 @@
 // YEAR: 2019
 // COPYRIGHT HOLDER: Greg Lin, Tanner Linsley
 
-function rangeFilter(column, state) {
-  // Get min and max values from raw table data
+function filterInput(column, state) {
   let min = Infinity;
   let max = 0;
   state.data.forEach(function (row) {
@@ -27,24 +27,26 @@ function rangeFilter(column, state) {
     min: min,
     max: max,
     onChange: function (event) {
-      // Set to undefined to clear the filter
       column.setFilter(event.target.value || undefined);
     },
-    style: { width: "100%", marginRight: "8px" },
+    style: { width: "100%" },
     "aria-label": "Filter " + column.name,
   });
 
   return React.createElement(
     "div",
     { style: { display: "flex", alignItems: "center", height: "100%" } },
-    [input, filterValue]
+    [input]
   );
 }
 
+
 // Filter method that filters numeric columns by minimum value
-function filterMinValue(rows, columnId, filterValue) {
+
+function filterMethod(rows, columnId, filterValue) {
   return rows.filter(function (row) {
     return row.values[columnId] >= filterValue;
   });
 }
+
 ```

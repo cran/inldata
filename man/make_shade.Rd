@@ -49,9 +49,14 @@ A hill shade layer is often used as a backdrop on top of which another, semi-tra
 \examples{
 elevation <- terra::unwrap(dem)
 hillshade <- make_shade(elevation)
-col <- inlcolor::get_colors(n = 256, scheme = "grayC")
-mar <- c(2, 2, 1, 4)
-terra::plot(hillshade, col = col, mar = mar, legend = FALSE)
+terra::plot(hillshade,
+  col = inlcolor::get_colors(
+    n = 256,
+    scheme = "grayC"
+  ),
+  mar = c(2, 2, 1, 4),
+  legend = FALSE
+)
 terra::plot(elevation,
   col = inlcolor::get_colors(
     n = 256,

@@ -39,7 +39,11 @@ download_file <- function(url,
   file <- file.path(cachedir, basename(url))
   is <- checkmate::test_file_exists(file, access = "r")
   if (!is) {
-    assert_url(url)
+    url <- assert_url(url)
+    if (is.null(url)) {
+      message("Download failed.")
+      return(invisible(NULL))
+    }
     utils::download.file(
       url = url,
       destfile = file,

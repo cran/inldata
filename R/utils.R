@@ -443,3 +443,29 @@ get_file_ext <- function(x, compression = TRUE) {
     FUN.VALUE = character(1)
   )
 }
+
+
+#' Remove NULL List Elements
+#'
+#' @description Removes elements from a list that are equal to `NULL`.
+#'
+#' @param x 'list'.
+#'
+#' @return List
+#'
+#' @author J.C. Fisher, U.S. Geological Survey, Idaho Water Science Center
+#'
+#' @export
+#'
+#' @keywords internal
+#'
+#' @examples
+#' d <- list("a", "b", NULL, "c")
+#' d
+#' d <- ccp(d)
+#' d
+
+ccp <- function(x) {
+  checkmate::assert_vector(x, null.ok = TRUE)
+  Filter(Negate(is.null), x)
+}

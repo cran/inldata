@@ -42,6 +42,7 @@
 #'   Random number generator state, used to create reproducible results.
 #' @param quiet 'logical' flag.
 #'   Whether to suppress printing of debugging information.
+#'
 #' @details This function retrieves and parses datasets from local and remote sources.
 #'   Access to the internet is required to download data from the following remote sources:
 #'   - National Elevation Dataset ([NED](https://www.usgs.gov/publications/national-elevation-dataset))
@@ -76,7 +77,7 @@
 #' # Example requires that the 'path' argument be specified as
 #' # the top-level directory of the inldata package repository.
 #' \dontrun{
-#' make_datasets(destdir = tempfile(""))
+#'   make_datasets(destdir = tempfile(""))
 #' }
 
 make_datasets <- function(path = getwd(),
@@ -229,9 +230,38 @@ make_datasets <- function(path = getwd(),
   colnames(data) <- c("agency_cd", "site_no", "station_nm", "network_cd", "pos")
   sites <- mds_sites(data, crs)
 
-  # set spatial extent
-  extent <- sf::st_buffer(sites, dist = buffer_dist) |>
-    sf::st_bbox()
+  # make digital elevation model dataset (dem)
+  message("STATUS: making 'dem' dataset ...")
+  ids <- c("n44w113", "n44w114", "n45w113", "n45w114")
+  urls <- sprintf("%s/StagedProducts/Elevation/13/TIFF/current/%s/USGS_13_%s.tif",
+    tnm_url, ids, ids
+  )
+  data <- do.call(terra::merge,
+    lapply(urls,
+      FUN = function(url) {
+        file <- download_file(url, quiet = quiet)
+        terra::rast(file)
+      }
+    )
+  )
+  extent <- sf::st_buffer(sites, dist = buffer_dist * 10) |> sf::st_bbox()
+  dem <- mds_dem(data, crs, extent, resolution)
+
+  # make mountains dataset (mountains)
+  message("STATUS: making 'mountains' dataset ...")
+  file <- file.path(path, "data-raw/misc/mountain-names.geojson")
+  checkmate::assert_file_exists(file, access = "r")
+  data <- sf::st_read(dsn = file, quiet = quiet)
+  mountains <- mds_mountains(data, crs, dem)
+
+  # crop dem and mountains datasets
+  extent <- sf::st_buffer(sites, dist = buffer_dist) |> sf::st_bbox()
+  dem <- terra::crop(dem, extent)
+  extent <- sf::st_bbox(dem)
+  mountains <- clean_sf(mountains, crs = crs, extent = extent, type = "POLYGON")
+  dem <- terra::wrap(dem)
+  save(dem, file = file.path(tmpdir, "dem.rda"), compress = FALSE)
+  save(mountains, file = file.path(tmpdir, "mountains.rda"), compress = FALSE)
 
   # make surface-water measurements dataset (swm)
   message("STATUS: making 'swm' dataset ...")
@@ -372,23 +402,6 @@ make_datasets <- function(path = getwd(),
   data <- sf::st_read(dsn = file, quiet = quiet)
   streams <- mds_streams(data, crs, extent)
   save(streams, file = file.path(tmpdir, "streams.rda"), compress = FALSE)
-
-  # make digital elevation model dataset (dem)
-  message("STATUS: making 'dem' dataset ...")
-  ids <- c("n44w113", "n44w114", "n45w113", "n45w114")
-  urls <- sprintf("%s/StagedProducts/Elevation/13/TIFF/current/%s/USGS_13_%s.tif",
-    tnm_url, ids, ids
-  )
-  data <- do.call(terra::merge,
-    lapply(urls,
-      FUN = function(url) {
-        file <- download_file(url, quiet = quiet)
-        terra::rast(file)
-      }
-    )
-  )
-  dem <- mds_dem(data, crs, extent, resolution)
-  save(dem, file = file.path(tmpdir, "dem.rda"), compress = FALSE)
 
   # compress temporary files
   message("STATUS: compress dataset files ...")
@@ -1305,7 +1318,8 @@ mds_facilities <- function(data, crs) {
       "geometry" = "geometry"
     ),
     agr = "identity",
-    crs = crs
+    crs = crs,
+    type = "POLYGON"
   )
 
   idxs <- tolower(data$name) |>
@@ -1334,7 +1348,8 @@ mds_percponds <- function(data, crs) {
       "geometry" = "geometry"
     ),
     agr = "identity",
-    crs = crs
+    crs = crs,
+    type = "POLYGON"
   )
 
   data$facility_id <- as.factor(data$facility_id)
@@ -1422,7 +1437,8 @@ mds_counties <- function(data, crs, extent) {
     ),
     agr = "identity",
     crs = crs,
-    extent = extent
+    extent = extent,
+    type = "POLYGON"
   )
 
   idxs <- tolower(data$name) |>
@@ -1511,7 +1527,8 @@ mds_lakes <- function(data, crs, extent) {
       "feature_tp" = "constant"
     ),
     crs = crs,
-    extent = extent
+    extent = extent,
+    type = "POLYGON"
   )
 
   data$id <- as.character(data$id)
@@ -1605,8 +1622,74 @@ mds_dem <- function(data, crs, extent, resolution) {
   r[] <- r[] * 3.2808399
   r[] <- round_numbers(r[], digits = 0)
 
+  # set field name
   names(r) <- "elevation"
-  terra::wrap(r)
+
+  r
+}
+
+
+# Mountains and Buttes (mountains) -----
+
+mds_mountains <- function(data, crs, dem) {
+
+  # check arguments
+  checkmate::assert_multi_class(data, classes = c("sf", "data.frame"))
+  checkmate::assert_class(crs, classes = "crs")
+  checkmate::assert_class(dem, classes = "SpatRaster")
+
+  # clean spatial feature
+  data <- clean_sf(data,
+    cols = c("name", "geometry"),
+    agr = "identity",
+    crs = crs
+  )
+
+  # calculate the terrain slope
+  r <- terra::terrain(dem, v = "slope")
+
+  # calculate slope threshold
+  threshold <- terra::values(r) |>
+    as.vector() |>
+    stats::na.omit() |>
+    terra::quantile(probs = 0.80)
+
+  # find slope greater than or equal to the threshold
+  r <- r >= threshold
+
+  # identify areas of connected steep areas
+  r <- terra::patches(r, zeroAsNA = TRUE)
+
+  # convert patches to polygons
+  p <- terra::as.polygons(r)
+
+  # fill holes in the polygons
+  p <- terra::fillHoles(p)
+
+  # convert polygons to spatial feature
+  p <- sf::st_as_sf(p)
+
+  # add polygon names
+  p <- sf::st_join(p, data, left = FALSE)
+
+  # set polygon tolerance
+  tol <- min(terra::res(r)) / 2
+
+  # simplify polygons
+  p <- sf::st_simplify(p, preserveTopology = TRUE, dTolerance = tol)
+
+  # get spatial extent
+  extent <- terra::ext(r) |> sf::st_bbox(crs = crs)
+
+  # clean spatial feature
+  p <- clean_sf(p,
+    cols = c("name", "geometry"),
+    crs = crs,
+    extent = extent,
+    type = "POLYGON"
+  )
+
+  p
 }
 
 
@@ -1658,7 +1741,6 @@ tabulate_parm_data <- function(parameters, samples) {
 
   tbl
 }
-
 
 # Tabulate Site Data ----
 

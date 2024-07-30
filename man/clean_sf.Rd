@@ -4,7 +4,7 @@
 \alias{clean_sf}
 \title{Clean a Simple Feature}
 \usage{
-clean_sf(x, cols = NULL, agr = NULL, crs = NULL, extent = NULL)
+clean_sf(x, cols = NULL, agr = NULL, crs = NULL, extent = NULL, type = NULL)
 }
 \arguments{
 \item{x}{'sf' object.
@@ -29,6 +29,11 @@ Target coordinate reference system.}
 
 \item{extent}{'bbox' object.
 Spatial extent (aka bounding box) used to crop the simple feature.}
+
+\item{type}{'character' vector.
+For retured geometries of type "GEOMETRY" or "GEOMETRYCOLLECTION",
+the returned object will consist only of elements of the specified type,
+one of "POLYGON", "POINT", and "LINESTRING".}
 }
 \value{
 Returns an object of class 'sf'.

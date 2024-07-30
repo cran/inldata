@@ -1,3 +1,13 @@
+# inldata 1.2.5
+
+- Ensure functions `assert_url` and `download_file` fail gracefully with an informative message
+  if the internet resource is not available (and not give a check warning nor error).
+
+# inldata 1.2.4
+
+- Ensure that unit tests do not fail when the internet connection is unavailable.
+- Add `mountains` dataset based on the slope threshold of the digital elevation model.
+
 # inldata 1.2.3
 
 - Add a unit test for the `clean_sf` function to replace the example in its help documentation.
@@ -24,6 +34,8 @@
 - In `units`, `samples`, and `parameters` datasets, rename field form `parm_unit` to `unit_cd`.
 - In `backgroud`, `benchmarks`, and `dl` datasets,
   substitute `srsname` and `parm_unit` fields with `parm_nm` field.
+- Revised `iwd ` dataset location
+- In the  `percopnds` dataset, added `status`, `start_dt`, `end_dt` fields and added more percolation ponds.
 
 # inldata 1.1.5
 
