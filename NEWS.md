@@ -1,3 +1,13 @@
+# inldata 1.2.7
+
+- Calculate the water level in feet above vertical datum (`gwl$sl_lev_va`) rather than download from NWIS.
+  This change addresses a backward compatibility issue introduced in version 2.7.16 of the **dataRetrieval** package.
+
+# inldata 1.2.6
+
+- Remove `full_names` argument from `write_datasets` function.
+- Fix invalid file paths in the downloads vignette.
+
 # inldata 1.2.5
 
 - Ensure functions `assert_url` and `download_file` fail gracefully with an informative message

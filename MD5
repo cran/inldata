@@ -1,6 +1,6 @@
-8d12d0ba55a402e6a02627c6eb44aa60 *DESCRIPTION
+7d0a8ec2c78fd83e68be562041619fbe *DESCRIPTION
 a31317ff3b757aba5d482def9800aee0 *NAMESPACE
-5e7b4cf35ea33b28a66f6131c0888445 *NEWS.md
+dca3b120aa2ac12a4f943dbf1e445b9f *NEWS.md
 cdf036d6f7a4cbd997be9462b99229b5 *R/assert_url.R
 241a23e1ceb570b6f23a4f76231fcc8f *R/background.R
 e680b46a665b692687883a73a1d103b5 *R/benchmarks.R
@@ -23,7 +23,7 @@ f9fdfc6b99a0be9b92f801a221f91ab8 *R/get_cache_dir.R
 234d1166eb777fec9c5eb2d21b787515 *R/iwd.R
 f9a05304b8f9c30ec13e2901addd77c5 *R/lakes.R
 443aa8c8893e89d5129d341efd57940a *R/make_data_release.R
-2042dbafb41f315b3900a0bc523202ca *R/make_datasets.R
+6c67cf1ac75c10ce16fc68c7c287ee80 *R/make_datasets.R
 9dc9db302c4c96c666e864dd7ceab8fc *R/make_dm.R
 8be8b64575591e43f074ee390571b620 *R/make_erd.R
 cf2a8fc8d904b052fdf45be69b800352 *R/make_shade.R
@@ -40,7 +40,7 @@ dd9fad068c67e49bb8df43cbabb5528e *R/streams.R
 8878ed8a9f46f1821fb7b516b56528a2 *R/units.R
 8e1bf47e9bcefeb6c1a879ae78315eb2 *R/utils.R
 f596d9417f858215de5ded4324a68ac3 *R/validate_metadata.R
-4974482ec027f6e9aa9e5d4b8c7b325f *R/write_datasets.R
+8bb01e6eb922599fd32d2964019f02bb *R/write_datasets.R
 b81afa5485bb17919eebed0296a2a543 *README.md
 aa5e5a2cbfaea3d9b6cdbe378ac48cee *build/partial.rdb
 ef7af111a48c0a50677e5a69b20e4e58 *data/background.rda
@@ -52,17 +52,17 @@ a6a82ee4fc4781f9ce4e451d7930a981 *data/cities.rda
 4125788a70fa3975be90e4ae966055b1 *data/dl.rda
 70cee505a99dab5d83e80680995cdfc0 *data/esrp.rda
 e734c65ddbd30c8c216eef8eea0829b2 *data/facilities.rda
-b413c180d3c7578a12ee123f2b5c4a17 *data/gwl.rda
+96b0ebdd2e7552952c4353a13ea636b1 *data/gwl.rda
 f977c79a3457c1586fc17df926bf556c *data/idaho.rda
 a2834e13238393bda92ad4a527296326 *data/inl.rda
 654cb81d77beeef301a6d272575f980f *data/iwd.rda
 c5c95084fff42124be0547f15163732c *data/lakes.rda
 916fdffe3cf5a2a0cdd2aba9fd8e65f1 *data/mountains.rda
-aa92ebe131ae568b1b3d2f154d67702f *data/parameters.rda
+b20448f05222d592e40dff3b16775d65 *data/parameters.rda
 554b18b1bff2abcccee6f3c24d144011 *data/percponds.rda
 49ec6551c9bd345badc72a432797dcca *data/roads.rda
 7c4f6ce08f169299139977b011395f16 *data/samples.rda
-c620cfa3c639ffcf0aabfa65d7746362 *data/sites.rda
+579791f32d3f9117d6c7c1ccf6486fd9 *data/sites.rda
 867d294356534fbfc7ad6786781155ee *data/streams.rda
 47c6d05b72fa049293fe93875a7fc495 *data/swm.rda
 90e65b00ebfcb5caeee101ddf5c00c51 *data/units.rda
@@ -71,7 +71,7 @@ c620cfa3c639ffcf0aabfa65d7746362 *data/sites.rda
 c3d188c149f4425ce47997d26de938eb *inst/extdata/test.rdb
 37b98116127e0c7930d79f89b673de67 *inst/extdata/test.xml
 edc4b3e2d40863c7bdf6f2a3c11a98ef *inst/extdata/test.zip
-2b63db06bfc997e41568be15cd4f62ed *inst/tinytest/test_data.R
+c232eb8d25199bc8f04ae7de9e7b2c2e *inst/tinytest/test_data.R
 01ba1228b594158ccdd9ea8b833f6ca8 *inst/tinytest/test_functions.R
 dd8a1d2a9bb0a0a41f9333d351db0dc7 *inst/tinytest/test_make_datasets.R
 1f7be899099d1d8f75e531754c95a3a5 *man/as_posix_ct.Rd
@@ -127,6 +127,6 @@ f645973c5e4c17ac6b17982bfab50d37 *man/swm.Rd
 0317e35b05a500206aa302357e5c3c56 *man/trim_station_nm.Rd
 8685e7380ed6237535abae298bd7d1a8 *man/units.Rd
 34f41c609ffd4186346baec69d4f7cfb *man/validate_metadata.Rd
-d29467bb8b6e46919f43fd3079081e21 *man/write_datasets.Rd
+bf6ef4a3cdb85e8daed481201ef7304f *man/write_datasets.Rd
 a2421ed01c924514dde58f383be1f266 *man/write_lines.Rd
 73929ed026fc297d1fa740dd9dee82cf *tests/tinytest.R

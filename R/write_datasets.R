@@ -36,8 +36,6 @@
 #'   Whether to add indentation, whitespace, and newlines to JSON output (default is `TRUE`).
 #'   See [`prettify`][jsonlite::prettify] function for details.
 #'   The tradeoff for human-readable output is a much larger file size.
-#' @param full_names 'logical' flag.
-#'   Whether the full paths of the files are returned (default).
 #' @param quiet 'logical' flag.
 #'   Whether to suppress printing of debugging information.
 #'
@@ -78,7 +76,6 @@ write_datasets <- function(package,
                            include = NULL,
                            exclude = NULL,
                            pretty = TRUE,
-                           full_names = TRUE,
                            quiet = FALSE) {
 
   # check arguments
@@ -119,7 +116,6 @@ write_datasets <- function(package,
     null.ok = TRUE
   )
   checkmate::assert_flag(pretty)
-  checkmate::assert_flag(full_names)
   checkmate::assert_flag(quiet)
 
   # check packages
@@ -330,12 +326,6 @@ write_datasets <- function(package,
       ) |>
         stop(call. = FALSE)
     }
-  }
-
-  # express as relative path
-  if (!full_names) {
-    paths <- sprintf("^%s/", destdir) |>
-      sub(replacement = "", x = paths)
   }
 
   # return output paths

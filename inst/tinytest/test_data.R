@@ -29,7 +29,7 @@ site_no <- "432700112470801" # well USGS 1
 is <- gwl$lev_dt == dt & gwl$site_no == site_no
 d <- gwl[is, ]
 expect_set_equal(d$lev_va, 593.27)
-expect_set_equal(d$sl_lev_va, 4432.53)
+expect_set_equal(d$sl_lev_va, 4432.54)
 expect_set_equal(d$lev_acy_va, 0.01)
 expect_set_equal(d$sl_lev_acy_va, 0.02)
 

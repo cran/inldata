@@ -1159,13 +1159,10 @@ mds_gwl <- function(sites, tz) {
   checkmate::assert_class(sites, classes = "sf")
   checkmate::assert_string(tz)
 
-  # download data from NWIS
+  # download depth to water level in feet below land surface from NWIS
   d <- dataRetrieval::readNWISgwl(
     siteNumbers = sites$site_no,
-    parameterCd = c(
-      "72019", # depth to water level, in feet below land surface.
-      "62611" # groundwater level above NAVD 88, in feet
-    ),
+    parameterCd = "72019",
     convertType = FALSE
   )
 
@@ -1191,11 +1188,11 @@ mds_gwl <- function(sites, tz) {
   d$lev_va <- as.numeric(d$lev_va)
   d$sl_lev_va <- as.numeric(d$sl_lev_va)
 
-  # place water-level depth and elevation on same row
-  d$id <- paste(d$site_no, d$site_tp_cd, d$lev_dt)
-  sl <- d[d$parameter_cd == "62611", c("id", "sl_lev_va")]
+  # calculate water level in feet above vertical datum
+  idxs <- match(d$site_no, sites$site_no)
+  d$alt_va <- sites$alt_va[idxs]
+  d$sl_lev_va <- d$alt_va - d$lev_va
   cols <- c(
-    "id",
     "site_nm",
     "site_no",
     "lev_dt",
@@ -1203,11 +1200,10 @@ mds_gwl <- function(sites, tz) {
     "lev_meth_cd",
     "lev_status_cd",
     "lev_age_cd",
-    "lev_va"
+    "lev_va",
+    "sl_lev_va"
   )
-  d <- d[d$parameter_cd == "72019", cols]
-  d <- merge(d, sl, by = "id")
-  d$id <- NULL
+  d <- d[, cols]
 
   # remove missing values
   is <- is.na(d$lev_va) | is.na(d$sl_lev_va)
@@ -1227,8 +1223,13 @@ mds_gwl <- function(sites, tz) {
   lev_acy <- c("0" = 1, "1" = 0.1, "2" = 0.01)
   d$lev_acy_va <- lev_acy[match(d$lev_acy_cd, names(lev_acy))]
   d$lev_acy_cd <- NULL
-  d$sl_lev_acy_va <- sites$alt_acy_va[match(d$site_no, sites$site_no)] + d$lev_acy_va
+  idxs <- match(d$site_no, sites$site_no)
+  d$sl_lev_acy_va <- sites$alt_acy_va[idxs] + d$lev_acy_va
 
+  # round water level in feet above vertical datum
+  d$sl_lev_va <- round(d$sl_lev_va / d$sl_lev_acy_va) * d$sl_lev_acy_va
+
+  # set factor class
   d$lev_meth_cd <- as.factor(d$lev_meth_cd)
   d$lev_status_cd <- as.factor(d$lev_status_cd)
   d$lev_age_cd <- as.factor(d$lev_age_cd)

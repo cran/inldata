@@ -1,6 +1,6 @@
 Package: inldata
 Title: Collection of Datasets for the USGS-INL Monitoring Networks
-Version: 1.2.5
+Version: 1.2.7
 Authors@R: c(
     person(given = c("Jason", "C."),
            family = "Fisher", role = c("aut", "cre"),
@@ -57,10 +57,10 @@ LazyData: true
 LazyDataCompression: xz
 RoxygenNote: 7.3.2
 NeedsCompilation: no
-Packaged: 2024-07-29 17:42:15 UTC; jfisher
+Packaged: 2024-07-31 15:22:54 UTC; jfisher
 Author: Jason C. Fisher [aut, cre] (<https://orcid.org/0000-0001-9032-8912>),
   Allison R. Trcka [aut] (<https://orcid.org/0000-0001-8498-4737>),
   Kerri C. Treinen [aut] (<https://orcid.org/0000-0003-0645-6810>)
 Maintainer: Jason C. Fisher <jfisher@usgs.gov>
 Repository: CRAN
-Date/Publication: 2024-07-30 17:00:02 UTC
+Date/Publication: 2024-09-12 07:20:02 UTC

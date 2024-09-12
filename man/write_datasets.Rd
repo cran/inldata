@@ -13,7 +13,6 @@ write_datasets(
   include = NULL,
   exclude = NULL,
   pretty = TRUE,
-  full_names = TRUE,
   quiet = FALSE
 )
 }
@@ -50,9 +49,6 @@ By default, none are excluded.}
 Whether to add indentation, whitespace, and newlines to JSON output (default is \code{TRUE}).
 See \code{\link[jsonlite:prettify]{prettify}} function for details.
 The tradeoff for human-readable output is a much larger file size.}
-
-\item{full_names}{'logical' flag.
-Whether the full paths of the files are returned (default).}
 
 \item{quiet}{'logical' flag.
 Whether to suppress printing of debugging information.}
